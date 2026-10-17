@@ -11,7 +11,10 @@ export class Shop {
     this.el.innerHTML = `<div class="shop"><div class="shop-top"><h3>ЗАКУПКА</h3><span id="shopMoney"></span><span id="shopTime"></span><span class="spacer"></span><button class="btn sm ${IS_TOUCH ? 'x' : ''}" id="shopClose">${IS_TOUCH ? '✕' : 'Закрыть [B]'}</button></div><div class="shop-body" id="shopBody"></div></div>`;
     root.appendChild(this.el);
     this.body = this.el.querySelector('#shopBody');
-    this.el.querySelector('#shopClose').onclick = () => this.close();
+    // крестик закрывает магазин при любом касании (pointerup и click), даже если состояние «открыто» рассинхронизировалось
+    const x = this.el.querySelector('#shopClose');
+    x.addEventListener('pointerup', (e) => { e.preventDefault(); this.forceClose(); });
+    x.addEventListener('click', () => this.forceClose());
     this.body.addEventListener('click', (e) => {
       const it = e.target.closest('.item'); if (!it || !this.m) return;
       const err = this.m.buy(this.m.player, it.dataset.id);
@@ -33,6 +36,13 @@ export class Shop {
     this.open_ = false; this.el.classList.remove('active');
     if (this.m) this.m.uiOpen = null;
     if (!silent && this.m && !this.m.paused) { this.game.input.enabled = true; this.game.input.clear(); if (!this.game.input.touchMode) this.game.input.lock(); }
+  }
+  // надёжное закрытие: всегда убирает окно и возвращает управление игре
+  forceClose() {
+    this.open_ = false; this.el.classList.remove('active');
+    const m = this.m; if (!m) return;
+    m.uiOpen = null;
+    if (!m.paused && !m.over) { this.game.input.enabled = true; this.game.input.clear(); if (!this.game.input.touchMode) this.game.input.lock(); }
   }
   toggle() { this.open_ ? this.close() : this.open(); }
 
