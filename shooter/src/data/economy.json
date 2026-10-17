@@ -1,0 +1,22 @@
+{
+  "startMoney": 800,
+  "maxMoney": 9000,
+  "winBonus": 3000,
+  "lossBonus": [1900, 2400, 2900],
+  "plantBonus": 300,
+  "roundsToWin": 13,
+  "halfAfter": 12,
+  "buyTime": 18,
+  "roundTime": 100,
+  "bombTime": 45,
+  "plantTime": 3.2,
+  "defuseTime": 6,
+  "endTime": 5,
+  "shields": {
+    "light": { "name": "Лёгкий щит", "price": 400, "value": 25 },
+    "heavy": { "name": "Тяжёлый щит", "price": 1000, "value": 50 }
+  },
+  "armorAbsorb": 0.66,
+  "ultMax": 8,
+  "baseSpeed": 5.6
+}

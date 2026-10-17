@@ -1,0 +1,1 @@
+{ "id": "hangar", "name": "Ангар-9", "size": [80, 80], "mirror": true, "attackSpawns": [[0, 35]], "defendSpawns": [[0, -35]], "boxes": [], "sites": {} }

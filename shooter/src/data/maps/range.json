@@ -1,0 +1,3 @@
+{ "id": "range", "name": "Полигон", "range": true, "size": [60, 70], "mirror": false,
+  "attackSpawns": [[0, 28]], "defendSpawns": [],
+  "boxes": [], "targets": [] }

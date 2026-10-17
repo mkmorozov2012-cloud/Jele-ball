@@ -1,0 +1,86 @@
+/* ===== PRISM NOIR — общие стили ===== */
+:root {
+  --bg: #0a0d14; --bg2: #101622; --panel: rgba(16, 22, 34, 0.86); --line: rgba(130, 160, 210, 0.2);
+  --text: #e8eef9; --muted: #8b97ad; --atk: #ff7a1a; --def: #19e0c8; --accent: #ffd23f; --danger: #ff3b5c;
+  --font: 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
+#view { position: fixed; inset: 0; width: 100%; height: 100%; display: none; cursor: crosshair; }
+#ui { position: fixed; inset: 0; pointer-events: none; }
+#ui > * { pointer-events: none; }
+.hidden { display: none !important; }
+button { font-family: inherit; color: inherit; }
+
+/* ===== HUD ===== */
+#hud { position: absolute; inset: 0; font-weight: 600; letter-spacing: 0.02em; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
+.h-top { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch; gap: 2px; }
+.h-team { --tc: var(--atk); display: flex; align-items: center; gap: 12px; padding: 6px 16px; min-width: 150px; background: var(--panel); border-bottom: 3px solid var(--tc); }
+.h-team.right { flex-direction: row-reverse; }
+.h-team b { font-size: 30px; line-height: 1; color: var(--tc); min-width: 30px; text-align: center; }
+.h-alive { display: flex; gap: 4px; }
+.h-alive i { width: 9px; height: 9px; background: rgba(255, 255, 255, 0.15); transform: rotate(45deg); }
+.h-alive i.on { background: var(--tc); box-shadow: 0 0 6px var(--tc); }
+.h-center { padding: 4px 22px; background: var(--panel); text-align: center; min-width: 170px; }
+#hTimer { font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+#hTimer.hot { color: var(--danger); animation: blink 0.5s steps(2) infinite; }
+#hPhase { font-size: 11px; color: var(--accent); letter-spacing: 0.15em; }
+#hRound { font-size: 10px; color: var(--muted); }
+@keyframes blink { 50% { opacity: 0.5; } }
+.h-mini { position: absolute; top: 10px; left: 10px; width: 230px; background: var(--panel); border: 1px solid var(--line); }
+.h-mini canvas { display: block; width: 100%; height: auto; }
+#hZone { padding: 3px 8px; font-size: 12px; color: var(--accent); border-top: 1px solid var(--line); min-height: 22px; }
+.h-kill { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.kf { padding: 5px 12px; background: var(--panel); font-size: 14px; display: flex; gap: 10px; align-items: center; border-right: 3px solid transparent; animation: slideIn 0.25s ease-out; }
+.kf em { font-style: normal; color: var(--muted); font-size: 12px; } .kf u { text-decoration: none; color: var(--danger); }
+.kf.me { border-right-color: var(--accent); background: rgba(255, 210, 63, 0.2); }
+.kf.dead { border-right-color: var(--danger); }
+@keyframes slideIn { from { transform: translateX(40px); opacity: 0; } }
+#hCross { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+#hCross .ch { position: absolute; background: var(--ch-color); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55); }
+#hCross .ring { background: transparent; border: 2px solid var(--ch-color); border-radius: 50%; box-shadow: none; }
+#hHit { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; }
+#hHit i { position: absolute; width: 3px; height: 10px; background: #fff; top: -5px; left: -1.5px; transform-origin: 50% 50%; }
+#hHit i:nth-child(1) { transform: translate(-13px, -13px) rotate(45deg); } #hHit i:nth-child(2) { transform: translate(13px, -13px) rotate(-45deg); }
+#hHit i:nth-child(3) { transform: translate(-13px, 13px) rotate(-45deg); } #hHit i:nth-child(4) { transform: translate(13px, 13px) rotate(45deg); }
+#hHit.head i { background: var(--danger); } #hHit.kill i { background: var(--accent); }
+#hMsg { position: absolute; top: 22%; left: 50%; transform: translateX(-50%) scale(0.9); font-size: 34px; font-weight: 800; letter-spacing: 0.25em; opacity: 0; transition: opacity 0.25s, transform 0.25s; text-align: center; color: #fff; text-shadow: 0 0 24px rgba(25, 224, 200, 0.7); }
+#hMsg.on { opacity: 1; transform: translateX(-50%) scale(1); }
+#hHint { position: absolute; bottom: 24%; left: 50%; transform: translateX(-50%); font-size: 15px; padding: 6px 14px; background: var(--panel); border: 1px solid var(--line); }
+#hHint:empty { display: none; }
+#hProg { position: absolute; bottom: 30%; left: 50%; width: 280px; transform: translateX(-50%); display: none; text-align: center; font-size: 13px; }
+.bar { height: 8px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.bar > div { height: 100%; width: 0; background: var(--accent); }
+#hProg .bar { height: 10px; margin-bottom: 4px; }
+.h-bl { position: absolute; left: 18px; bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+.h-agent b { font-size: 18px; display: block; } .h-agent span { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.h-hp { display: flex; align-items: center; gap: 12px; }
+#hHpN { font-size: 52px; line-height: 1; font-weight: 800; min-width: 90px; font-variant-numeric: tabular-nums; }
+.h-hp .bars { width: 160px; display: flex; flex-direction: column; gap: 5px; }
+.bar.hp > div { background: #5cff9d; } .bar.ar > div { background: #66b6ff; }
+.h-br { position: absolute; right: 22px; bottom: 16px; text-align: right; }
+#hWpn { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+#hAmmo b { font-size: 56px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; } #hAmmo b.low { color: var(--danger); }
+#hAmmo span { font-size: 20px; color: var(--muted); margin-left: 6px; }
+#hMoney { font-size: 22px; color: var(--accent); margin-top: 4px; }
+.h-abil { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+.ab { position: relative; width: 62px; height: 62px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; text-align: center; }
+.ab.ready { border-color: var(--def); box-shadow: 0 0 10px rgba(25, 224, 200, 0.35); }
+.ab-key { position: absolute; top: 3px; left: 5px; font-size: 12px; color: var(--accent); }
+.ab-name { position: absolute; bottom: 4px; width: 100%; font-size: 10px; color: var(--muted); }
+.ab-n { position: absolute; top: 14px; width: 100%; font-size: 22px; font-weight: 800; }
+.ab-cd { position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(0, 0, 0, 0.62); }
+#hFlash, #hHurt, #hSmoke { position: absolute; inset: 0; opacity: 0; }
+#hFlash { background: #fff; } #hSmoke { background: #aab3c8; }
+#hHurt { background: radial-gradient(ellipse at center, transparent 45%, rgba(255, 30, 60, 0.75) 100%); }
+#hScope { position: absolute; inset: 0; display: none; background: radial-gradient(circle at center, transparent 33vh, #000 33.4vh); }
+#hScope i { position: absolute; background: #000; } #hScope i:nth-child(1) { left: 0; right: 0; top: calc(50% - 0.5px); height: 1px; } #hScope i:nth-child(2) { top: 0; bottom: 0; left: calc(50% - 0.5px); width: 1px; }
+#hSpec { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); padding: 8px 18px; background: var(--panel); font-size: 15px; display: none; }
+#hFps { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); }
+#hLock { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); font-size: 22px; letter-spacing: 0.2em; text-transform: uppercase; pointer-events: none; }
+#hScores { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(860px, 94vw); padding: 18px 22px; background: rgba(10, 14, 22, 0.92); border: 1px solid var(--line); display: none; }
+.sc-title { font-size: 12px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; } .sc-score { font-size: 34px; font-weight: 800; text-align: center; margin: -6px 0 8px; }
+#hScores table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px; }
+#hScores th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+#hScores td { padding: 5px 8px; } #hScores tr.me td { background: rgba(255, 210, 63, 0.14); } #hScores tr.dead td { opacity: 0.45; }
+.sw { display: inline-block; width: 4px; height: 12px; margin-right: 8px; vertical-align: -1px; }
