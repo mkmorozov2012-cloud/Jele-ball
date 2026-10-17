@@ -13,6 +13,6 @@ window.__g = game;   // для отладки из консоли
 const q = new URLSearchParams(location.search);
 if (q.has('dev')) {
   game.input.free = true;
-  game.startMatch({ mode: q.get('mode') || 'match', map: q.get('map') || 'quarry', agent: q.get('agent') || 'lumen', diff: +(q.get('diff') ?? 1), side: q.get('side') || 'atk' });
+  game.startMatch({ mode: q.get('mode') || 'match', map: q.get('map') || 'quarry', agent: q.get('agent') || 'lumen', diff: +(q.get('diff') ?? 1), side: q.get('side') || 'atk', auto: q.has('auto') });
   if (q.has('speed')) game.timeScale = +q.get('speed');
 }

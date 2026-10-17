@@ -41,7 +41,7 @@ export class ViewModel {
     this.a = actor;
     this.root = new THREE.Group();
     this.holder = new THREE.Group();     // анимируемая часть
-    this.holder.scale.setScalar(0.8);
+    this.holder.scale.setScalar(0.62);
     this.root.add(this.holder);
     scene.add(this.root);
     this.cache = {};
@@ -84,8 +84,8 @@ export class ViewModel {
     // прицеливание
     const adsTarget = a.scope > 0 && w.type !== 'sniper' ? 1 : 0;
     this.adsK = damp(this.adsK, adsTarget, 16, dt);
-    const base = { x: 0.17, y: -0.19, z: -0.42 };
-    let x = base.x * (1 - this.adsK), y = base.y + (-0.095 - base.y) * this.adsK, z = base.z + (-0.3 - base.z) * this.adsK;
+    const base = { x: 0.15, y: -0.15, z: -0.45 };
+    let x = base.x * (1 - this.adsK), y = base.y + (-0.075 - base.y) * this.adsK, z = base.z + (-0.34 - base.z) * this.adsK;
     let rx = 0, ry = 0, rz = 0;
     // покачивание при ходьбе / дыхание
     const mv = a.body.onGround ? Math.min(1, a.speedNow / 5) : 0;

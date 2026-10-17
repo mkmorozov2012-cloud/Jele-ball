@@ -19,15 +19,12 @@ export const DEFAULTS = {
   last: { map: 'quarry', diff: 1, agent: 'lumen', side: 'random' },
 };
 
+const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+// Глубокая копия значений по умолчанию + поверх — то, что сохранил игрок
 const merge = (base, over) => {
-  const out = Array.isArray(base) ? [...base] : { ...base };
-  if (!over || typeof over !== 'object') return out;
-  for (const k of Object.keys(base)) {
-    if (k in over) {
-      out[k] = base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])
-        ? merge(base[k], over[k]) : over[k];
-    }
-  }
+  const out = JSON.parse(JSON.stringify(base));
+  if (!isObj(over)) return out;
+  for (const k of Object.keys(base)) if (k in over) out[k] = isObj(base[k]) ? merge(base[k], over[k]) : over[k];
   return out;
 };
 
@@ -42,6 +39,6 @@ class SettingsStore extends Emitter {
     try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch { /* ignore */ }
     this.emit('change', this.data);
   }
-  reset() { this.data = merge(DEFAULTS, null); this.save(); }
+  reset() { Object.assign(this.data, merge(DEFAULTS, null)); this.save(); }
 }
 export const settings = new SettingsStore();

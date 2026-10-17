@@ -52,7 +52,10 @@ export class Player {
   update(dt) {
     const m = this.m, a = this.a, g = this.game, inp = g.input;
     const camera = g.camera;
-    if (m.uiOpen === 'blocking') { inp.takeMouse(); }
+    if (m.autoPlayer && a.alive) {                      // отладка: игрока ведёт бот
+      this.eyeH = a.eyeY - a.body.y;
+      this.applyCamera(camera, dt); this.vm.update(dt, m, camera); return;
+    }
     if (!a.alive) return this.updateDead(dt);
     if (this.spectating) this.setSpectate(null);
 

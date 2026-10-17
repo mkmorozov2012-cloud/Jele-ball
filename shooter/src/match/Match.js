@@ -23,6 +23,7 @@ export const AGENT_IDS = Object.keys(AGENTS);
 
 // Один матч (или тренировка): мир, участники, раунды, бомба, эффекты.
 export class Match {
+
   constructor(game, cfg) {
     this.game = game; this.cfg = cfg; this.audio = game.audio;
     this.mode = cfg.mode || 'match';
@@ -85,8 +86,9 @@ export class Match {
     }
     this.player.ctrl = new Player(this, this.player);
     for (const a of this.actors) {
-      if (!a.isPlayer) { a.brain = new BotBrain(this, a, this.diff); this.bots.push(a.brain); }
+      if (!a.isPlayer || cfg.auto) { a.brain = new BotBrain(this, a, this.diff); this.bots.push(a.brain); }
     }
+    this.autoPlayer = !!cfg.auto;
     this.actors.forEach(mkModel);
     this.player.model.root.visible = false;
   }
@@ -105,6 +107,7 @@ export class Match {
       a.model = new ActorModel('def'); this.group.add(a.model.root);
       this.loadoutDefault(a);
       this.spawnAt(a, t.x, t.z, 0, 0);
+      this.abilities.init(a);
       if (t.kind === 'bot') { a.brain = new BotBrain(this, a, 0); a.brain.rangeBot = true; this.bots.push(a.brain); }
       this.actors.push(a); this.dummies.push(a);
     }
@@ -277,6 +280,16 @@ export class Match {
       if (!a.model || a.isPlayer) continue;
       a.model.setRevealed(a.alive && a.side !== viewerSide && a.fx.revealUntil > this.time);
     }
+  }
+
+  // Возвращает павшего союзника в бой на месте гибели (ультимейт «Возрождение»)
+  reviveActor(a) {
+    const p = a.deathPos;
+    this.spawnAt(a, p.x, p.z, p.x, p.z + 1);
+    a.body.y = p.y + 0.01; a.hp = 60; a.fx.hot = [];
+    a.model.fall = 0; a.model.inner.rotation.x = 0;
+    if (a.isPlayer) { a.ctrl?.setSpectate?.(null); a.ctrl.vm.root.visible = true; }
+    this.emit('message', `${a.name} возвращён в бой`, 2);
   }
 
   // отладка: показать граф навигации (в консоли: __g.match.debugNav())
