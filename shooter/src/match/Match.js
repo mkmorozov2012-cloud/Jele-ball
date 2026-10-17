@@ -5,8 +5,8 @@ import AGENTS from '../data/agents.json';
 import { loadMap } from '../world/MapBuilder.js';
 import { zoneAt } from '../world/MapData.js';
 import { Effects } from '../weapons/Effects.js';
-import { WEAPONS, ECON } from '../weapons/Weapons.js';
-import { giveWeapon, refillAmmo, tickWeapon } from '../weapons/Combat.js';
+import { WEAPONS, ECON, slotOf } from '../weapons/Weapons.js';
+import { giveWeapon, refillAmmo, tickWeapon, switchSlot } from '../weapons/Combat.js';
 import { Actor } from './Actor.js';
 import { ActorModel } from './ActorModel.js';
 import { Rounds } from './Rounds.js';
@@ -162,7 +162,10 @@ export class Match {
     if (!free && a.money < price) return 'Недостаточно денег';
     if (!free) a.money -= price;
     apply();
-    if (a.isPlayer) this.audio.uiSnd('buy');
+    if (a.isPlayer) {
+      this.audio.uiSnd('buy');
+      if (WEAPONS[item]) { switchSlot(this, a, slotOf(item)); }
+    }
     return null;
   }
 

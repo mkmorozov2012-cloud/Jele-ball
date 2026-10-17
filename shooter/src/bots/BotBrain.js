@@ -86,7 +86,7 @@ export class BotBrain {
     }
     if (best) {
       if (best !== this.target || !this.targetVisible) {
-        this.reactAt = now + this.D.react * rand(0.8, 1.25);
+        this.reactAt = now + this.D.react * rand(0.8, 1.25) * (this.plan?.role === 'def' && this.state === 'hold' ? 1.4 : 1);
         this.aimHead = Math.random() < this.D.head;
       }
       this.target = best; this.targetVisible = true; this.seenAt = now;
@@ -250,10 +250,10 @@ export class BotBrain {
         this.strafeT = rand(0.35, 0.9);
         this.strafeDir = Math.random() < this.D.strafe && dist > 8 && !this.crouchShot ? (Math.random() < 0.5 ? -1 : 1) : 0;
       }
-      if (this.state === 'execute' || this.state === 'retake') this.strafeMode = 'advance';  // продолжаем идти к цели
+      if ((this.state === 'execute' || this.state === 'retake') && dist > 12) this.strafeMode = 'advance';  // продолжаем идти к цели, стреляя на ходу
       if (now >= this.reactAt && err < (2.2 + 14 / Math.max(6, dist)) * DEG && !a.frozen) {
         const still = a.speedNow < (this.diff >= 1 ? 1.4 : 3.5);
-        if (still || w.type === 'mg') this.fire(w, dist);
+        if (still || w.type === 'mg' || this.strafeMode === 'advance') this.fire(w, dist);
       }
       if (a.plantProgress > 0) a.plantProgress = 0;
       if (a.defuseProgress > 0) a.defuseProgress = 0;

@@ -59,7 +59,7 @@ export class Tactics {
     const since = m.time - this.liveAt;
     const bots = m.bots.filter((b) => b.actor.alive && b.actor.side === 'atk');
     const arrived = bots.filter((b) => b.atGoal).length;
-    if (since > 12 && (arrived >= Math.ceil(bots.length * 0.6) || since > 22)) { this.execute = true; this.executeAt = m.time; }
+    if (since > 8 && (arrived >= Math.ceil(bots.length * 0.6) || since > 18)) { this.execute = true; this.executeAt = m.time; }
     return this.execute;
   }
 }
