@@ -154,8 +154,14 @@ export class UI {
     settings.save();
     const fade = this.fade; fade.classList.add('on');
     setTimeout(() => {
-      this.game.startMatch({ mode: this.cfg.mode, map: this.cfg.map, diff: this.cfg.diff, agent: this.cfg.agent, side: this.cfg.side });
-      setTimeout(() => fade.classList.remove('on'), 150);
+      try {
+        this.game.startMatch({ mode: this.cfg.mode, map: this.cfg.map, diff: this.cfg.diff, agent: this.cfg.agent, side: this.cfg.side });
+      } catch (err) {
+        console.error(err);                       // ошибка запуска не должна оставлять чёрный экран
+        this.game.endMatch(true); this.showMenu();
+      } finally {
+        setTimeout(() => fade.classList.remove('on'), 150);
+      }
     }, 420);
   }
 

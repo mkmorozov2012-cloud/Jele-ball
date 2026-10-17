@@ -44,6 +44,7 @@ export class Input {
     addEventListener('wheel', (e) => { if (this.enabled) this.wheel += Math.sign(e.deltaY); }, { passive: true });
     addEventListener('contextmenu', (e) => e.preventDefault());
     addEventListener('blur', () => { this.down.clear(); this.mouse.clear(); });
+    document.addEventListener('pointerlockerror', () => { this.free = true; });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
       this.onLockChange?.(this.locked);
@@ -59,12 +60,17 @@ export class Input {
     if (isDown) { if (!this.down.has(e.code)) this.edge.add(e.code); this.down.add(e.code); }
     else this.down.delete(e.code);
   }
+  // Захват мыши. В песочнице (например, во встроенном окне) он может быть запрещён —
+  // тогда играем без захвата: движения мыши читаются, пока курсор над окном.
   lock() {
     if (this.free) return;
+    const fallback = () => { this.free = true; };
     try {
       const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
-      p?.catch?.(() => this.canvas.requestPointerLock());
-    } catch { this.canvas.requestPointerLock(); }
+      p?.catch?.(() => { try { const q = this.canvas.requestPointerLock(); q?.catch?.(fallback); } catch { fallback(); } });
+    } catch {
+      try { this.canvas.requestPointerLock(); } catch { fallback(); }
+    }
   }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
   codes(action) { return settings.data.keys[action] || []; }
