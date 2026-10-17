@@ -5,6 +5,7 @@ import { WEAPONS, ECON } from '../weapons/Weapons.js';
 import AGENTS from '../data/agents.json';
 import { currentSpread, wdef } from '../weapons/Combat.js';
 import { Minimap } from '../world/Minimap.js';
+import { IS_TOUCH } from '../core/Settings.js';
 
 const SIDE_COL = { atk: 'var(--atk)', def: 'var(--def)' };
 
@@ -198,10 +199,11 @@ export class Hud {
     let hint = '';
     const useKey = prettyKey(settings.data.keys.use[0]), buyKey = prettyKey(settings.data.keys.buy[0]);
     if (p.alive) {
-      if (m.mode === 'match' && m.bomb.canPlant(p)) hint = `Удерживайте [${useKey}] — установить заряд`;
-      else if (m.mode === 'match' && m.bomb.canDefuse(p)) hint = `Удерживайте [${useKey}] — обезвредить заряд`;
-      else if (m.mode === 'match' && r.phase === 'buy') hint = `[${buyKey}] — закупка`;
-      else if (m.mode === 'range') hint = `[${buyKey}] — оружие`;
+      const U = IS_TOUCH ? 'кнопку «Заряд»' : `[${useKey}]`, Bk = IS_TOUCH ? 'кнопка «Закупка»' : `[${buyKey}]`;
+      if (m.mode === 'match' && m.bomb.canPlant(p)) hint = `Удерживайте ${U} — установить заряд`;
+      else if (m.mode === 'match' && m.bomb.canDefuse(p)) hint = `Удерживайте ${U} — обезвредить заряд`;
+      else if (m.mode === 'match' && r.phase === 'buy') hint = `${Bk} — закупка`;
+      else if (m.mode === 'range') hint = `${Bk} — оружие`;
     }
     this.set('hHint', hint);
     const prog = p.plantProgress > 0 ? p.plantProgress / ECON.plantTime : p.defuseProgress > 0 ? p.defuseProgress / ECON.defuseTime : 0;
@@ -218,7 +220,7 @@ export class Hud {
     this.setStyle('hSmoke', 'opacity', inSmoke ? '0.93' : '0');
     // --- наблюдение ---
     const spec = m.player.ctrl.spectating;
-    this.set('hSpec', !p.alive ? (spec ? `Наблюдение: ${spec.name} · ЛКМ — следующий` : 'Вы погибли') : '');
+    this.set('hSpec', !p.alive ? (spec ? `Наблюдение: ${spec.name} · ${IS_TOUCH ? 'Дальше' : 'ЛКМ'} — следующий` : 'Вы погибли') : '');
     this.setStyle('hSpec', 'display', !p.alive ? 'block' : 'none');
     // --- блокировка курсора ---
     const needLock = !game.input.locked && !game.input.free && !m.paused && !m.uiOpen && !m.over;

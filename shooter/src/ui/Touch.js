@@ -6,10 +6,10 @@ import AGENTS from '../data/agents.json';
 // остальной игре всё равно, чем играют — клавиатурой или пальцами.
 const BTN = [
   // id, подпись, класс, тип: hold | tap | toggle
-  ['fire', '🔥', 'fire', 'hold'], ['aim', '◎', 'aim', 'hold'], ['jump', '⤒', 'jump', 'hold'], ['crouch', '⤓', 'crouch', 'toggle'],
-  ['reload', 'R', 'reload', 'tap'], ['use', 'F', 'use', 'hold'],
-  ['ab1', 'C', 'ab', 'tap'], ['ab2', 'Q', 'ab', 'tap'], ['ab3', 'E', 'ab', 'tap'], ['ult', 'X', 'ab ult', 'tap'],
-  ['swap', '⇄', 'sm swap', 'tap'], ['buy', '$', 'sm', 'tap'], ['emote', '♪', 'sm', 'tap'], ['scores', '≡', 'sm', 'hold'], ['pause', 'II', 'sm', 'tap'],
+  ['fire', 'Огонь', 'fire', 'hold'], ['aim', 'Прицел', 'aim', 'hold'], ['jump', 'Прыжок', 'jump', 'hold'], ['crouch', 'Присед', 'crouch', 'toggle'],
+  ['reload', 'Перезаряд', 'reload', 'tap'], ['use', 'Заряд', 'use', 'hold'],
+  ['ab1', '1', 'ab', 'tap'], ['ab2', '2', 'ab', 'tap'], ['ab3', '3', 'ab', 'tap'], ['ult', 'Ульта', 'ab ult', 'tap'],
+  ['swap', 'Оружие', 'sm swap', 'tap'], ['buy', 'Закупка', 'sm', 'tap'], ['emote', 'Танец', 'sm', 'tap'], ['scores', 'Таблица', 'sm', 'hold'], ['pause', 'Пауза', 'sm', 'tap'],
 ];
 
 export class Touch {
@@ -114,6 +114,10 @@ export class Touch {
     this.el.style.display = show ? '' : 'none';
     if (!show) return;
     const p = m.player, ag = AGENTS[p.agent];
+    if (this.agent !== p.agent) {                              // подписи кнопок способностей — названия способностей
+      this.agent = p.agent;
+      for (const d of ag.abilities) { const sp = this.btns[d.slot].el.querySelector('span'); sp.textContent = d.name; sp.style.fontSize = d.name.length > 9 ? '9px' : ''; }
+    }
     for (const d of ag.abilities) {
       const b = this.btns[d.slot]; if (!b) continue;
       const n = b.el.querySelector('.n'), cd = b.el.querySelector('.cd');
@@ -124,7 +128,8 @@ export class Touch {
     }
     const planting = m.bomb.canPlant(p) || m.bomb.canDefuse(p);
     this.btns.use.el.classList.toggle('hl', planting);
+    this.btns.use.el.querySelector('span').textContent = m.bomb.canDefuse(p) ? 'Разряд' : 'Заряд';
     this.btns.buy.el.style.display = (m.mode === 'range' || m.rounds.phase === 'buy') ? '' : 'none';
-    this.btns.fire.el.querySelector('span').textContent = p.alive ? '🔥' : '▶';
+    this.btns.fire.el.querySelector('span').textContent = p.alive ? 'Огонь' : 'Дальше';
   }
 }

@@ -1,4 +1,6 @@
 import { WEAPONS, TYPE_NAMES, TYPE_ORDER } from '../weapons/Weapons.js';
+import { IS_TOUCH } from '../core/Settings.js';
+const T = (s) => (IS_TOUCH ? s.replace(/ЛКМ/g, '«Огонь»').replace(/ПКМ/g, '«Прицел»').replace('Удар («Огонь»)', 'Удар (Огонь)') : s);
 
 const TABS = ['melee', ...TYPE_ORDER];
 
@@ -20,7 +22,7 @@ export function buildArsenal(el) {
     const bar = (label, v, max, text) => `<div class="stat"><span>${label}</span><div class="bar"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span>${text}</span></div>`;
     let stats;
     if (w.type === 'melee') {
-      stats = bar('Удар (ЛКМ)', w.dmg, 150, w.dmg) + bar('Тяжёлый (ПКМ)', w.heavy, 150, w.heavy) + bar('Дальность', w.range, 4, w.range + ' м') + bar('Скорость бега', w.speed * 100, 120, '×' + w.speed);
+      stats = bar(T('Удар (ЛКМ)'), w.dmg, 150, w.dmg) + bar(T('Тяжёлый (ПКМ)'), w.heavy, 150, w.heavy) + bar('Дальность', w.range, 4, w.range + ' м') + bar('Скорость бега', w.speed * 100, 120, '×' + w.speed);
     } else {
       const pel = w.pellets > 1 ? ` ×${w.pellets}` : '';
       stats = bar('Урон (тело)', w.dmg * Math.min(w.pellets, 4) * (w.pellets > 1 ? 1 : 1), 150, w.dmg + pel)
@@ -35,9 +37,9 @@ export function buildArsenal(el) {
         + bar('Падение урона', 100 - (1 - w.falloff[2]) * 100, 100, `${w.falloff[0]}–${w.falloff[1]} м`)
         + bar('Пробитие стен', w.pen, 2, w.pen + ' м')
         + `<div class="stat"><span>Режим</span><span></span><span>${w.burst ? 'очередь ×' + w.burst : w.auto ? 'авто' : 'одиночный'}</span></div>`
-        + (w.zoom ? `<div class="stat"><span>Прицел (ПКМ)</span><span></span><span>${w.zoom.map((z) => '×' + z).join(' / ')}</span></div>` : '');
+        + (w.zoom ? `<div class="stat"><span>${T('Прицел (ПКМ)')}</span><span></span><span>${w.zoom.map((z) => '×' + z).join(' / ')}</span></div>` : '');
     }
-    det.innerHTML = `<h4>${w.name}<small>${TYPE_NAMES[w.type]} · ${w.price ? '$' + w.price : 'бесплатно'}</small></h4><div class="desc">${w.desc}</div>
+    det.innerHTML = `<h4>${w.name}<small>${TYPE_NAMES[w.type]} · ${w.price ? '$' + w.price : 'бесплатно'}</small></h4><div class="desc">${T(w.desc)}</div>
       <div>${stats}</div>${w.recoil ? '<div><canvas class="recoil" width="260" height="260"></canvas><div class="rc-cap">ПАТТЕРН ОТДАЧИ: путь прицела за очередь. Выучите его и тяните мышь против отдачи.</div></div>' : ''}`;
     if (w.recoil) drawRecoil(det.querySelector('canvas'), w);
   };

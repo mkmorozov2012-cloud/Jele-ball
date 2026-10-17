@@ -1,13 +1,14 @@
 import { WEAPONS, ECON, TYPE_NAMES, TYPE_ORDER } from '../weapons/Weapons.js';
 import AGENTS from '../data/agents.json';
 import { fmtTime } from '../core/Util.js';
+import { IS_TOUCH } from '../core/Settings.js';
 
 // Меню закупки: оружие по категориям, щиты, способности агента.
 export class Shop {
   constructor(root) {
     this.el = document.createElement('div');
     this.el.id = 'shop'; this.el.className = 'overlay';
-    this.el.innerHTML = `<div class="shop"><div class="shop-top"><h3>ЗАКУПКА</h3><span id="shopMoney"></span><span id="shopTime"></span><span class="spacer"></span><button class="btn sm" id="shopClose">Закрыть [B]</button></div><div class="shop-body" id="shopBody"></div></div>`;
+    this.el.innerHTML = `<div class="shop"><div class="shop-top"><h3>ЗАКУПКА</h3><span id="shopMoney"></span><span id="shopTime"></span><span class="spacer"></span><button class="btn sm ${IS_TOUCH ? 'x' : ''}" id="shopClose">${IS_TOUCH ? '✕' : 'Закрыть [B]'}</button></div><div class="shop-body" id="shopBody"></div></div>`;
     root.appendChild(this.el);
     this.body = this.el.querySelector('#shopBody');
     this.el.querySelector('#shopClose').onclick = () => this.close();
@@ -50,7 +51,7 @@ export class Shop {
     const sh = Object.entries(ECON.shields).map(([id, s]) => `<div class="item ${p.armor >= s.value ? 'own' : ''} ${p.armor < s.value && !afford(s.price) ? 'off' : ''}" data-id="${id}"><b>${s.name}</b><span class="pr">$${s.price}</span><small>+${s.value} щита</small></div>`).join('');
     const ab = ag.abilities.filter((d) => d.slot === 'ab1' || d.slot === 'ab2').map((d) => {
       const st = p.abil[d.slot];
-      return `<div class="item ${st.charges >= d.maxCharges ? 'own' : ''} ${st.charges < d.maxCharges && !afford(d.cost) ? 'off' : ''}" data-id="${d.slot}"><b>[${d.key}] ${d.name}</b><span class="pr">$${d.cost}</span><small>заряды ${st.charges}/${d.maxCharges} · ${d.desc}</small></div>`;
+      return `<div class="item ${st.charges >= d.maxCharges ? 'own' : ''} ${st.charges < d.maxCharges && !afford(d.cost) ? 'off' : ''}" data-id="${d.slot}"><b>${IS_TOUCH ? '' : `[${d.key}] `}${d.name}</b><span class="pr">$${d.cost}</span><small>заряды ${st.charges}/${d.maxCharges} · ${d.desc}</small></div>`;
     }).join('');
     this.body.innerHTML = [...TYPE_ORDER.map((t) => sec(TYPE_NAMES[t], byType(t))), sec('Щиты', sh), sec('Способности: ' + ag.name, ab)].join('');
   }

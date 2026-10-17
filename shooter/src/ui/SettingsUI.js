@@ -1,6 +1,7 @@
 import { settings, DEFAULTS } from '../core/Settings.js';
 import { ACTIONS, prettyKey } from '../core/Input.js';
 import { renderCrosshair } from './Hud.js';
+import { IS_TOUCH } from '../core/Settings.js';
 
 // Экран настроек: управление, прицел (с живым предпросмотром), звук, графика.
 export function buildSettings(el, game) {
@@ -31,6 +32,7 @@ export function buildSettings(el, game) {
     panel.innerHTML = '';
     if (tab === 'control') {
       panel.appendChild(slider('Чувствительность мыши', () => S.sens, (v) => { S.sens = v; }, 0.1, 5, 0.05, (v) => (+v).toFixed(2)));
+      if (IS_TOUCH) { const n = document.createElement('div'); n.className = 'label'; n.textContent = 'Управление: кнопки на экране. Чувствительность свайпа настраивается ползунком выше.'; panel.appendChild(n); return; }
       const lab = document.createElement('div'); lab.className = 'label'; lab.textContent = 'Раскладка клавиш (нажмите кнопку, затем клавишу; Esc — отмена)'; panel.appendChild(lab);
       const grid = document.createElement('div'); grid.className = 'keys';
       for (const [id, name] of ACTIONS) {

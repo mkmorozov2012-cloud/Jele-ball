@@ -97,7 +97,7 @@ export class UI {
     // --- стрельбище ---
     this.mk('range', `<h2>Стрельбище</h2><h3>Тренировка</h3>
       <p style="max-width:640px;color:#b9c3d6;line-height:1.6">Неподвижные и движущиеся мишени, а также «бот-цели», которые стреляют в ответ (лёгкий уровень).
-      Деньги и патроны бесконечны — нажмите <b>B</b>, чтобы взять любое оружие и способности. Способности и ультимейт доступны сразу.</p>
+      Деньги и патроны бесконечны — нажмите ${IS_TOUCH ? '<b>«Закупка»</b>' : '<b>B</b>'}, чтобы взять любое оружие и способности. Способности и ультимейт доступны сразу.</p>
       <div class="row" style="margin-top:26px"><button class="btn ghost" data-back>← Назад</button><button class="btn primary" id="rangeGo">Выбор агента →</button></div>`)
       .querySelector('#rangeGo').onclick = () => { this.cfg.mode = 'range'; this.openAgents(true); };
 
@@ -147,7 +147,7 @@ export class UI {
     det.style.setProperty('--ac', a.color);
     det.innerHTML = `<h4>${a.name}</h4><div class="role">${a.role}</div><p style="color:#b9c3d6;margin-bottom:12px">${a.desc}</p>` + a.abilities.map((d) => {
       const meta = d.slot === 'ult' ? `ультимейт · ${d.cost} очков` : d.recharge ? `бесплатно · перезарядка ${d.cd} с` : `$${d.cost} · макс. зарядов: ${d.maxCharges} · пауза ${d.cd} с`;
-      return `<div class="abl"><div class="k">${d.key}</div><div><b>${d.name}</b><small>${meta}</small><p>${d.desc}</p></div></div>`;
+      return `<div class="abl"><div class="k">${IS_TOUCH ? ({ ab1: '1', ab2: '2', ab3: '3', ult: '★' })[d.slot] : d.key}</div><div><b>${d.name}</b><small>${meta}</small><p>${d.desc}</p></div></div>`;
     }).join('');
     det.style.animation = 'none'; void det.offsetWidth; det.style.animation = '';
   }

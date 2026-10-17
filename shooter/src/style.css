@@ -225,25 +225,23 @@ html.touch * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: 
 .tbase, .tknob { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.35; }
 .tbase { width: 120px; height: 120px; margin: -60px 0 0 -60px; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.06); }
 .tknob { width: 54px; height: 54px; margin: -27px 0 0 -27px; background: rgba(255, 255, 255, 0.55); }
-.tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.45); background: rgba(14, 20, 32, 0.55); color: #fff; font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; user-select: none; }
-.tb span { position: relative; z-index: 1; text-shadow: 0 1px 3px #000; }
-.tb.down { background: rgba(255, 210, 63, 0.45); border-color: var(--accent); transform: scale(0.94); }
+.tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 14px; border: 2px solid rgba(255, 255, 255, 0.45); background: rgba(14, 20, 32, 0.58); color: #fff; font-weight: 800; font-size: 11px; line-height: 1.1; letter-spacing: 0; text-align: center; display: flex; align-items: center; justify-content: center; overflow: hidden; user-select: none; width: 70px; height: 44px; padding: 2px 3px; }
+.tb span { position: relative; z-index: 1; text-shadow: 0 1px 3px #000; word-break: break-word; }
+.tb.down { background: rgba(255, 210, 63, 0.45); border-color: var(--accent); transform: scale(0.95); }
 .tb.on { background: rgba(25, 224, 200, 0.4); border-color: var(--def); }
 .tb .cd { position: absolute; left: 0; bottom: 0; width: 100%; height: 0; background: rgba(0, 0, 0, 0.65); }
-.tb .n { position: absolute; top: 2px; right: 6px; font-size: 11px; font-style: normal; color: var(--accent); z-index: 1; }
-.tb.fire { right: max(18px, env(safe-area-inset-right, 0px)); bottom: 22px; width: 92px; height: 92px; font-size: 32px; background: rgba(255, 90, 40, 0.38); border-color: #ff9a5a; }
-.tb.aim { right: 128px; bottom: 28px; width: 62px; height: 62px; }
-.tb.jump { right: 30px; bottom: 128px; width: 60px; height: 60px; }
-.tb.crouch { right: 100px; bottom: 112px; width: 54px; height: 54px; }
-.tb.reload { right: 196px; bottom: 30px; width: 52px; height: 52px; }
-.tb.use { right: 196px; bottom: 90px; width: 52px; height: 52px; border-color: var(--accent); }
+.tb .n { position: absolute; top: 1px; right: 5px; font-size: 10px; font-style: normal; color: var(--accent); z-index: 1; }
+.tb.fire { right: max(18px, env(safe-area-inset-right, 0px)); bottom: 20px; width: 96px; height: 96px; border-radius: 50%; font-size: 16px; background: rgba(255, 90, 40, 0.38); border-color: #ff9a5a; }
+.tb.aim { right: 124px; bottom: 24px; } .tb.reload { right: 200px; bottom: 24px; }
+.tb.crouch { right: 124px; bottom: 76px; } .tb.use { right: 200px; bottom: 76px; border-color: var(--accent); }
+.tb.jump { right: 20px; bottom: 124px; }
 .tb.use.hl { background: rgba(255, 210, 63, 0.5); animation: blink 0.7s steps(2) infinite; }
-.tb.ab { width: 50px; height: 50px; font-size: 15px; bottom: 148px; }
+.tb.ab { width: 72px; height: 46px; }
 .tb.ab.ready { border-color: var(--def); box-shadow: 0 0 10px rgba(25, 224, 200, 0.5); }
-.tb[data-id=ab1] { right: 252px; bottom: 100px; } .tb[data-id=ab2] { right: 266px; bottom: 162px; }
-.tb[data-id=ab3] { right: 192px; bottom: 156px; } .tb[data-id=ult] { right: 140px; bottom: 198px; }
-.tb.sm { width: 38px; height: 38px; font-size: 14px; top: 8px; }
-.tb.swap { right: 18px; top: 150px; } .tb[data-id=buy] { right: 18px; top: 198px; } .tb[data-id=emote] { right: 18px; top: 246px; } .tb[data-id=scores] { right: 18px; top: 104px; } .tb[data-id=pause] { right: 18px; top: 56px; }
+.tb[data-id=ab1] { right: 200px; bottom: 130px; } .tb[data-id=ab2] { right: 124px; bottom: 130px; }
+.tb[data-id=ab3] { right: 200px; bottom: 182px; } .tb[data-id=ult] { right: 124px; bottom: 182px; }
+.tb.sm { width: 64px; height: 34px; font-size: 10px; right: 18px; }
+.tb[data-id=pause] { top: 8px; } .tb[data-id=scores] { top: 48px; } .tb[data-id=swap] { top: 88px; } .tb[data-id=buy] { top: 128px; } .tb[data-id=emote] { top: 168px; }
 #rotate { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 30px; background: #0a0d14; font-size: 20px; z-index: 20; }
 @media (orientation: portrait) { html.touch #rotate { display: flex; } }
 
@@ -278,3 +276,10 @@ html.touch * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: 
 html.touch .h-abil { display: none; }
 html.touch .h-br { display: block; right: auto; left: 50%; bottom: 4px; top: auto; text-align: center; transform: translateX(-50%) scale(0.6); transform-origin: bottom center; white-space: nowrap; }
 html.touch .h-mini { width: 112px; }
+
+/* телефон: крестик закрытия вместо подписи с клавишей, подписи вместо букв */
+#shopClose.x { font-size: 20px; padding: 4px 14px; line-height: 1; }
+html.touch .abl .k { font-size: 13px; }
+html.touch .h-top { left: 43%; }
+html.touch .h-kill { right: 88px; }
+.tb.reload span { font-size: 9.5px; }
