@@ -74,6 +74,7 @@ export function buildSettings(el, game) {
       panel.appendChild(select('Качество', () => g.quality, (v) => { g.quality = v; }, [['low', 'Низкое (без теней)'], ['medium', 'Среднее'], ['high', 'Высокое']]));
       panel.appendChild(select('Лимит FPS', () => g.fpsCap, (v) => { g.fpsCap = +v; }, [[0, 'Без ограничений'], [30, '30'], [60, '60'], [120, '120'], [144, '144']]));
       panel.appendChild(slider('Поле зрения (FOV)', () => g.fov, (v) => { g.fov = v; }, 70, 120, 1, (v) => v + '°'));
+      panel.appendChild(slider('Тряска экрана', () => g.shake, (v) => { g.shake = v; }, 0, 1.5, 0.05, (v) => Math.round(v * 100) + '%'));
       const f = document.createElement('div'); f.className = 'set'; f.innerHTML = `<span>Показывать FPS</span><input type="checkbox" ${g.showFps ? 'checked' : ''}><span></span>`;
       f.querySelector('input').onchange = (e) => { g.showFps = e.target.checked; settings.save(); }; panel.appendChild(f);
       const n = document.createElement('div'); n.className = 'label'; n.textContent = 'Качество применяется при следующем запуске матча'; panel.appendChild(n);

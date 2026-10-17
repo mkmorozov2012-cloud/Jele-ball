@@ -8,7 +8,11 @@ export function botBuy(m, a) {
   let money = a.money;
   const round = m.rounds.round;
   // экономия: на слабом бюджете иногда пропускаем раунд
-  if (round > 1 && !hasPrimary && money < 1700 && Math.random() < 0.45) { if (money >= 500) buy('light'); return; }
+  if (!hasPrimary && m.tactics.ecoMode(a.side)) {          // командное эко: копим на следующий раунд
+    if (money >= 400 && Math.random() < 0.5) buy('light');
+    if (money >= 450 && Math.random() < 0.4) buy('fang');
+    return;
+  }
 
   if (!hasPrimary) {
     let w = null;

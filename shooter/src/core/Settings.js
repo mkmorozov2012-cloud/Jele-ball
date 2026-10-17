@@ -7,14 +7,14 @@ export const DEFAULTS = {
   sens: 1.0,                      // множитель чувствительности мыши
   crosshair: { color: '#19e0c8', size: 7, thickness: 2, gap: 4, shape: 'cross', dot: false, opacity: 1 },
   volume: { master: 0.7, sfx: 1, ui: 0.8 },
-  graphics: { quality: 'medium', fpsCap: 0, fov: 100, showFps: true },
+  graphics: { quality: 'medium', fpsCap: 0, fov: 100, showFps: true, shake: 1 },
   keys: {
     forward: ['KeyW'], back: ['KeyS'], left: ['KeyA'], right: ['KeyD'],
     jump: ['Space'], crouch: ['ControlLeft', 'KeyZ'], walk: ['ShiftLeft'],
     reload: ['KeyR'], use: ['KeyF'],
     ab1: ['KeyC'], ab2: ['KeyQ'], ab3: ['KeyE'], ult: ['KeyX'],
     slot1: ['Digit1'], slot2: ['Digit2'], slot3: ['Digit3'],
-    buy: ['KeyB'], scores: ['Tab'],
+    buy: ['KeyB'], scores: ['Tab'], emote: ['KeyV'],
   },
   last: { map: 'quarry', diff: 1, agent: 'lumen', side: 'random' },
 };

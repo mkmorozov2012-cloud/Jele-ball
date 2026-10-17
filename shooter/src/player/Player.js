@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { settings } from '../core/Settings.js';
-import { clamp, damp, DEG } from '../core/Util.js';
+import { clamp, damp, DEG, angDiff } from '../core/Util.js';
 import { ECON, WEAPONS } from '../weapons/Weapons.js';
 import { shoot, startReload, switchSlot, wdef, currentSpread } from '../weapons/Combat.js';
 import { stepActor, applyCrouch } from './Movement.js';
 import { ViewModel } from './ViewModel.js';
+import { DANCES, DANCE_NAMES } from '../match/ActorModel.js';
 
 const SLOTS = ['primary', 'secondary', 'knife'];
 
@@ -14,6 +15,7 @@ export class Player {
     this.m = m; this.a = actor; this.game = m.game;
     this.punch = { yaw: 0, pitch: 0 };
     this.shake = 0;
+    this.trauma = 0; this.fovKick = 0; this.tilt = 0; this.flinch = 0; this.tclock = Math.random() * 100;
     this.eyeH = 1.62;
     this.zoomMul = 1;
     this.bobT = 0;
@@ -27,9 +29,57 @@ export class Player {
     actor.onShoot = (w, kick) => this.onShoot(w, kick);
     actor.onMelee = (heavy) => this.vm.swing(heavy);
     actor.onSwitch = () => { this.vm.draw(); };
+    // источники тряски экрана
+    m.on('hurt', (from, dealt) => {
+      this.addTrauma(0.25 + dealt / 90);
+      if (from) {                                   // крен и «рывок» в сторону, откуда стреляли
+        const dx = from.x - actor.body.x, dz = from.z - actor.body.z;
+        const side = (dx * Math.cos(actor.yaw) - dz * Math.sin(actor.yaw)) / (Math.hypot(dx, dz) || 1);
+        this.tilt += side * 0.06; this.flinch += 0.025;
+      }
+    });
+    m.on('exploded', () => {
+      const d = Math.hypot(m.bomb.x - actor.body.x, m.bomb.z - actor.body.z);
+      this.addTrauma(Math.max(0.15, 1 - d / 70)); this.fovKick += 4;
+    });
   }
 
+  // ---- танец (клавиша V): камера от третьего лица, бит и поза ----
+  startDance(kind) {
+    const a = this.a;
+    a.dance = { kind, t: 0 }; this.orbit = 0; this.stopBeat?.(); this.stopBeat = this.m.audio.danceBeat(kind);
+    a.model.root.visible = true; this.vm.root.visible = false; a.scope = 0;
+    this.m.emit('message', `Танец: ${DANCE_NAMES[kind]}`, 1.2);
+  }
+  stopDance() {
+    const a = this.a; if (!a.dance) return;
+    a.dance = null; this.stopBeat?.(); this.stopBeat = null;
+    if (a.model) a.model.root.visible = false;
+  }
+  danceCamera(dt, camera) {
+    const a = this.a, b = a.body;
+    this.orbit += dt * 0.55;
+    const ang = a.yaw + this.orbit, fx = -Math.sin(ang), fz = -Math.cos(ang);
+    const hx = b.x, hy = b.y + 1.3, hz = b.z;
+    let dist = 3.0;
+    const hit = this.m.world.raycast(hx, hy, hz, fx, 0.25, fz, dist + 0.3);
+    if (hit) dist = Math.max(0.8, hit.t - 0.3);
+    this.camX = hx + fx * dist; this.camY = hy + 0.25 * dist; this.camZ = hz + fz * dist;
+    camera.position.set(this.camX, this.camY, this.camZ);
+    camera.lookAt(hx, hy - 0.15, hz);
+    this.camYaw = Math.atan2(-(hx - this.camX), -(hz - this.camZ));
+    this.game.setZoom(1);
+  }
+
+  // «травма» растёт от событий и плавно спадает; сила тряски = травма² (мелкие толчки почти не видны, большие — заметны)
+  addTrauma(v) { this.trauma = Math.min(1, this.trauma + v); }
+
+  // сглаженный шум без случайных скачков
+  noise(seed) { const t = this.tclock; return (Math.sin(t * 17.3 + seed) + Math.sin(t * 27.1 + seed * 2.3) * 0.6 + Math.sin(t * 41.7 + seed * 3.1) * 0.3) / 1.9; }
+
   newRound() {
+    this.trauma = 0; this.tilt = 0; this.flinch = 0; this.fovKick = 0;
+    this.stopBeat?.(); this.stopBeat = null; if (this.a.model) this.a.model.root.visible = false;
     this.punch.yaw = this.punch.pitch = 0; this.shake = 0; this.eyeH = 1.62; this.zoomMul = 1;
     this.setSpectate(null);
     this.vm.draw();
@@ -39,7 +89,8 @@ export class Player {
     const k = w.type === 'sniper' ? 1 : 1;
     this.punch.pitch = Math.min(this.punch.pitch + kick[1] * DEG * k, 20 * DEG);
     this.punch.yaw += kick[0] * DEG;
-    this.shake += 0.0018 + kick[1] * 0.0012;
+    const pw = { pistol: 0.07, smg: 0.045, rifle: 0.075, shotgun: 0.32, sniper: 0.4, mg: 0.06, melee: 0.05 }[w.type] ?? 0.06;
+    this.addTrauma(pw); this.fovKick += w.type === 'sniper' || w.type === 'shotgun' ? 1.2 : 0.35;
     this.vm.kick(w);
   }
 
@@ -59,6 +110,17 @@ export class Player {
     if (!a.alive) return this.updateDead(dt);
     if (this.spectating) this.setSpectate(null);
 
+    // --- танец ---
+    if (inp.pressed('emote')) {
+      const i = a.dance ? (DANCES.indexOf(a.dance.kind) + 1) % DANCES.length : Math.floor(Math.random() * DANCES.length);
+      this.startDance(DANCES[i]);
+    }
+    if (a.dance) {
+      const moved = ['forward', 'back', 'left', 'right', 'jump'].some((x) => inp.isDown(x)) || inp.fire || inp.aim || inp.pressed('reload') || inp.pressed('ab1') || inp.pressed('ab2') || inp.pressed('ab3') || inp.pressed('ult') || m.time - (a.lastHurt ?? -9) < 0.3;
+      inp.takeMouse(); inp.takeWheel();
+      if (moved && a.dance.t > 0.25) this.stopDance();
+      else { a.frozen = true; stepActor(m, a, 0, 0, dt); a.frozen = false; this.danceCamera(dt, camera); return; }
+    }
     const w = wdef(a);
     // --- взгляд ---
     const [dx, dy] = inp.takeMouse();
@@ -82,7 +144,7 @@ export class Player {
     this.handleUse(dt, inp);
 
     stepActor(m, a, wx, wz, dt, inp.isDown('jump'));
-    if (a.landed > 0) { this.eyeH -= Math.min(0.25, a.landed * 0.012); }
+    if (a.landed > 0) { this.eyeH -= Math.min(0.25, a.landed * 0.012); this.vm.land(a.landed); }
     this.eyeH = damp(this.eyeH, a.crouching ? 1.15 : 1.62, 14, dt);
 
     // --- оружие ---
@@ -105,10 +167,10 @@ export class Player {
     const firing = m.time - a.lastShot < 0.12;
     const rec = Math.exp(-(firing ? 3.2 : 9) * dt);
     this.punch.pitch *= rec; this.punch.yaw *= rec;
-    this.shake *= Math.exp(-14 * dt);
 
     this.applyCamera(camera, dt);
-    this.vm.update(dt, m, camera);
+    this.vm.update(dt, m, camera, { yaw: angDiff(this.prevYaw ?? a.yaw, a.yaw), pitch: a.pitch - (this.prevPitch ?? a.pitch) });
+    this.prevYaw = a.yaw; this.prevPitch = a.pitch;
     // дульная позиция для трассеров
     const f = a.look(this.dir, this.camYaw, camera.rotation.x);
     a.muzzle = { x: this.camX + f.x * 0.7 + Math.cos(this.camYaw) * 0.22, y: this.camY + f.y * 0.7 - 0.16, z: this.camZ + f.z * 0.7 - Math.sin(this.camYaw) * 0.22 };
@@ -177,9 +239,15 @@ export class Player {
     this.camY = b.y + this.eyeH + Math.sin(this.bobT * 2) * 0.015 * bob;
     camera.position.set(this.camX, this.camY, this.camZ);
     this.camYaw = a.yaw + this.punch.yaw;
-    const sh = this.shake;
-    camera.rotation.set(a.pitch + this.punch.pitch + (Math.random() - 0.5) * sh, this.camYaw + (Math.random() - 0.5) * sh, Math.cos(this.bobT) * 0.004 * bob, 'YXZ');
+    // тряска: травма → сглаженный шум по рысканию, тангажу и крену
+    this.tclock += dt;
+    this.trauma = Math.max(0, this.trauma - dt * 1.5);
+    this.tilt = damp(this.tilt, 0, 7, dt); this.flinch = damp(this.flinch, 0, 9, dt); this.fovKick = damp(this.fovKick, 0, 10, dt);
+    const amt = this.trauma * this.trauma * (settings.data.graphics.shake ?? 1) * (1 - Math.min(0.6, (this.zoomMul - 1) * 0.2));
+    const sy = this.noise(1) * 0.035 * amt, sp = this.noise(7) * 0.035 * amt + this.flinch, sr = this.noise(13) * 0.06 * amt + this.tilt;
+    camera.rotation.set(a.pitch + this.punch.pitch + sp, this.camYaw + sy, Math.cos(this.bobT) * 0.004 * bob + sr, 'YXZ');
     this.game.setZoom(this.zoomMul);
+    if (this.fovKick > 0.02) { camera.fov += this.fovKick * (settings.data.graphics.shake ?? 1); camera.updateProjectionMatrix(); }
   }
 
   // --- наблюдение после смерти ---

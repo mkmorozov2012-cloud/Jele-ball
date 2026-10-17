@@ -1,8 +1,10 @@
 import './style.css';
+import * as THREE from 'three';
 import { Game } from './core/Game.js';
 
 const game = new Game();
 window.__g = game;   // для отладки из консоли
+window.__THREE = THREE;
 
 // Режим отладки: ?dev=1 запускает матч сразу, без меню и Pointer Lock
 const q = new URLSearchParams(location.search);

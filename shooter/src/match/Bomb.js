@@ -37,7 +37,7 @@ export class Bomb {
   plant(a) {
     const s = this.siteAt(a);
     this.planted = true; this.planter = a; this.site = s?.name || '?';
-    this.x = a.body.x; this.z = a.body.z; this.timer = ECON.bombTime;
+    this.x = a.body.x; this.z = a.body.z; this.timer = ECON.bombTime; this.plantTime = this.m.time;
     this.mesh.position.set(this.x, a.body.y, this.z); this.mesh.visible = true;
     a.money = Math.min(ECON.maxMoney, a.money + ECON.plantBonus);
     a.ult = Math.min(8, a.ult + 1);

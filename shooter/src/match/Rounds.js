@@ -1,6 +1,7 @@
 import { ECON, WEAPONS } from '../weapons/Weapons.js';
 import AGENTS from '../data/agents.json';
 import { giveWeapon, refillAmmo } from '../weapons/Combat.js';
+import { DANCES } from './ActorModel.js';
 
 // Раундовый режим: фазы, счёт, смена сторон, экономика.
 // Команды (squad): 0 — команда игрока, 1 — противник. Стороны: 'atk' (атака) / 'def' (защита).
@@ -88,6 +89,7 @@ export class Rounds {
       }
     }
     this.timeLeft -= dt;
+    if (this.phase === 'live') m.tactics.update();
     if (this.phase === 'buy') {
       if (this.timeLeft <= 0) { this.phase = 'live'; this.timeLeft = ECON.roundTime; m.emit('phase', 'live'); m.emit('message', 'РАУНД НАЧАЛСЯ', 1.5); m.tactics.liveStart(); }
     } else if (this.phase === 'live') {
@@ -129,6 +131,12 @@ export class Rounds {
     this.last = { winnerSide, winnerSquad: ws, reason };
     this.history.push({ round: this.round, winnerSquad: ws, winnerSide, reason });
     m.emit('roundEnd', this.last);
+    // победители танцуют и осыпают всех конфетти
+    for (const a of m.actors) {
+      if (!a.alive || a.side !== winnerSide) continue;
+      if (!a.isPlayer || m.autoPlayer) a.dance = { kind: DANCES[Math.floor(Math.random() * DANCES.length)], t: Math.random() };
+      m.fx.confetti(a.body.x, a.body.y, a.body.z, 22);
+    }
     m.audio.roundEnd(m.player.squad === ws);
     m.emit('message', m.player.squad === ws ? 'РАУНД ВЫИГРАН' : 'РАУНД ПРОИГРАН', 3);
 

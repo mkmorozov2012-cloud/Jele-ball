@@ -11,6 +11,54 @@ export class Tactics {
     this.execute = false;                  // атака начала штурм точки
     this.executeAt = 0;
     this.plan = {};                        // actor.id -> {...}
+    this.sight = { atk: null, def: null }; // последнее замеченное врагами положение (общая информация команды)
+    this.switched = false; this.atkStart = 5;
+  }
+
+  // Общая «рация»: любой бот сообщает, где увидел врага
+  report(side, enemy) { this.sight[side] = { x: enemy.body.x, z: enemy.body.z, t: this.m.time }; }
+  recent(side, sec = 3.5) { const s = this.sight[side]; return s && this.m.time - s.t < sec ? s : null; }
+
+  // Экономика команды: если в среднем денег мало — «эко-раунд» (копим), иначе полная закупка
+  ecoMode(side) {
+    const list = this.m.actors.filter((a) => a.side === side);
+    const avg = list.reduce((s, a) => s + a.money + (a.guns.primary ? 2500 : 0), 0) / Math.max(1, list.length);
+    return this.m.rounds.round > 1 && avg < 2300;
+  }
+
+  // Каждый кадр боя: решаем, не пора ли атаке сменить точку
+  update() {
+    const m = this.m;
+    if (m.mode !== 'match' || m.rounds.phase !== 'live' || this.switched || m.bomb.planted || !this.execute) return;
+    const lost = this.atkStart - m.aliveCount('atk');
+    if (lost >= 2 && m.time - this.executeAt < 30 && m.aliveCount('atk') >= 2) {
+      this.switched = true;
+      if (Math.random() < 0.6) this.switchSite();
+    }
+  }
+  switchSite() {
+    const m = this.m, names = this.sites(), other = names.find((n) => n !== this.site);
+    if (!other) return;
+    this.site = other;
+    const S = m.map.sites[other];
+    let i = 0;
+    for (const a of m.actors) {
+      const p = this.plan[a.id]; if (!p || p.role !== 'atk') continue;
+      p.site = other; p.entry = S.entries[i % S.entries.length]; p.post = S.posts[i % S.posts.length]; i++;
+    }
+    this.execute = false; this.liveAt = m.time - 3;      // бежим на другую точку и ждём сбора
+    for (const b of m.bots) if (b.actor.side === 'atk') { b.goalIdx = -1; b.atGoal = false; b.executing = false; }
+    m.emit('message', 'Атака меняет точку!', 1.5);
+  }
+
+  // Ретейк: защитники сначала собираются у точки и только потом идут на заряд
+  retakeReady() {
+    const m = this.m, b = m.bomb;
+    if (!b.planted) return false;
+    if (m.time - b.plantTime > 16) return true;
+    const s = m.map.sites[b.site]; let near = 0, alive = 0;
+    for (const a of m.actors) { if (!a.alive || a.side !== 'def') continue; alive++; if (Math.hypot(a.body.x - s.x, a.body.z - s.z) < s.r + 14) near++; }
+    return near >= Math.min(3, alive);
   }
 
   sites() { return Object.keys(this.m.map.sites); }
@@ -36,7 +84,7 @@ export class Tactics {
     });
   }
 
-  liveStart() { this.liveAt = this.m.time; }
+  liveStart() { this.liveAt = this.m.time; this.switched = false; this.atkStart = this.m.aliveCount('atk'); }
 
   // Первый живой атакующий-бот — «закладчик» (если игрок-атакующий жив, ему решать самому)
   planter() {

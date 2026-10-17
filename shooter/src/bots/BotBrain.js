@@ -23,6 +23,8 @@ export class BotBrain {
     this.reset();
     this.perT = Math.random() * 0.1;
     this.abT = 1 + Math.random();
+    // «размен»: если рядом погиб союзник, идём мстить, откуда по нему стреляли
+    m.on('kill', (k) => this.onTeamKill(k));
   }
   reset() {
     this.state = 'idle';
@@ -35,12 +37,24 @@ export class BotBrain {
     this.bought = false; this.buyAt = 0;
     this.executing = false; this.sneak = false;
     this.lookYaw = this.actor.yaw; this.scanT = 0; this.wanderT = 0;
+    this.inCover = false; this.coverIdx = -1; this.coverUntil = 0; this.coverCool = 0; this.trade = null; this.jT = rand(3, 8); this.jiggle = null;
+  }
+
+  onTeamKill(k) {
+    const a = this.actor, m = this.m;
+    if (!a.alive || this.diff < 1 || this.rangeBot || !k.killer || k.victim.side !== a.side || k.victim === a) return;
+    if (this.targetVisible || a.frozen || this.state === 'retake') return;
+    const d = Math.hypot(k.victim.body.x - a.body.x, k.victim.body.z - a.body.z);
+    if (d > 30 || m.aliveCount(a.side) < 2) return;
+    this.trade = { x: k.killer.body.x, z: k.killer.body.z, until: m.time + 6 };
+    this.noise = { x: k.killer.body.x, z: k.killer.body.z, t: m.time, kind: 'trade' };
   }
   newRound() {
     this.reset();
     const a = this.actor, m = this.m;
     this.plan = m.tactics.plan[a.id] || null;
     this.buyAt = m.time + 0.5 + Math.random() * 4;
+    if (Math.random() < 0.12) a.dance = { kind: pick(['disco', 'robot', 'wave', 'floss', 'jump']), t: Math.random() * 3 };   // веселье на закупке
     this.lookYaw = a.yaw;
   }
 
@@ -92,6 +106,7 @@ export class BotBrain {
       this.target = best; this.targetVisible = true; this.seenAt = now;
       this.lastKnown = { x: best.body.x, z: best.body.z };
       m.tactics.noteContact(best.body.x, best.body.z);
+      m.tactics.report(a.side, best);
     } else {
       if (this.targetVisible && now - this.seenAt > 0.35) this.targetVisible = false;
     }
@@ -126,6 +141,10 @@ export class BotBrain {
       return;
     }
     if (!plan) return;
+    if (this.inCover) { this.state = 'cover'; this.setGoal(this.coverIdx); return; }
+    if (this.trade && m.time < this.trade.until && !a.frozen && !bomb.canPlant(a)) {
+      this.state = 'trade'; this.setGoal(nav.nearest(this.trade.x, this.trade.z)); return;
+    }
     if (plan.role === 'atk') {
       const site = m.map.sites[plan.site];
       if (bomb.planted) {
@@ -151,7 +170,8 @@ export class BotBrain {
       if (bomb.planted && !bomb.defused) {
         this.state = 'retake'; this.executing = true;
         const s = m.map.sites[bomb.site];
-        this.setGoal(this.nodeIdx(s.plant));
+        if (m.tactics.retakeReady()) this.setGoal(this.nodeIdx(s.plant));
+        else { this.setGoal(this.nodeIdx(s.entries[(plan.i || 0) % s.entries.length])); this.holdLook = { x: bomb.x, z: bomb.z }; }
         const near = Math.hypot(a.body.x - bomb.x, a.body.z - bomb.z) < 2.4;
         if (near && !this.targetVisible && bomb.canDefuse(a)) this.doDefuse(dt);
         else a.defuseProgress = 0;
@@ -167,6 +187,19 @@ export class BotBrain {
         this.setGoal(this.nodeIdx(hold));
       }
     }
+  }
+  // Ищет ближайший узел, который не виден врагу (укрытие для перезарядки / при малом здоровье)
+  pickCover() {
+    const a = this.actor, m = this.m, t = this.target; if (!t) return -1;
+    let best = -1, bd = 1e9;
+    m.nav.nodes.forEach((n, i) => {
+      const d = Math.hypot(n.x - a.body.x, n.z - a.body.z);
+      if (d > 20 || d < 2 || d >= bd) return;
+      if (m.world.seen(n.x, n.y + 1.5, n.z, t.body.x, t.body.y + 1.5, t.body.z)) return;
+      if (!m.world.segmentFree(a.body.x, a.body.z, a.body.y, n.x, n.z, n.y)) return;
+      bd = d; best = i;
+    });
+    return best;
   }
   centerNode() {
     if (this._center !== undefined) return this._center;
@@ -202,6 +235,12 @@ export class BotBrain {
       const dx = this.target.body.x - b.x, dz = this.target.body.z - b.z, d = Math.hypot(dx, dz) || 1;
       wx = -dz / d * this.strafeDir; wz = dx / d * this.strafeDir;
     }
+    // «джигл-пик»: на удержании позиции изредка выглядываем вбок и возвращаемся
+    if (this.jiggle) {
+      const j = this.jiggle, r = j.until - m.time;
+      if (r <= 0) this.jiggle = null;
+      else { const dir = r > j.dur / 2 ? j.dir : -j.dir; wx = Math.cos(a.yaw) * dir; wz = -Math.sin(a.yaw) * dir; a.walking = true; }
+    }
     // застревание
     this.stuckT += dt;
     if (this.stuckT > 0.7) {
@@ -213,14 +252,18 @@ export class BotBrain {
       } else this.stuckN = 0;
       this.lastX = b.x; this.lastZ = b.z; this.stuckT = 0;
     }
-    a.walking = this.sneak && !engaged;
+    if (!this.jiggle) a.walking = this.sneak && !engaged;
     // присед — только при дальней стрельбе стоя
     applyCrouch(m, a, !!(engaged && this.crouchShot));
     const wasFrozen = a.frozen;
     stepActor(m, a, wx, wz, dt, jump);
     a.frozen = wasFrozen && (a.plantProgress > 0 || a.defuseProgress > 0);
-    // куда смотреть при движении
-    if (!engaged && (wx || wz)) this.lookYaw = Math.atan2(-wx, -wz);
+    // куда смотреть при движении: у поворота смотрим уже на следующий участок пути (проверка углов)
+    if (!engaged && (wx || wz)) {
+      this.lookYaw = Math.atan2(-wx, -wz);
+      const cur = m.nav.nodes[this.path[Math.min(this.pi, this.path.length - 1)]], nxt = m.nav.nodes[this.path[Math.min(this.pi + 1, this.path.length - 1)]];
+      if (cur && nxt && cur !== nxt && Math.hypot(cur.x - b.x, cur.z - b.z) < 3.5) this.lookYaw = Math.atan2(-(nxt.x - b.x), -(nxt.z - b.z));
+    }
   }
 
   // ---------- взгляд и стрельба ----------
@@ -233,7 +276,8 @@ export class BotBrain {
       engaged = true;
       const tb = t.body, ex = a.body.x, ey = a.eyeY, ez = a.body.z;
       const ty = tb.y + tb.h * (this.aimHead ? 0.93 : 0.62);
-      const dx = tb.x - ex, dz = tb.z - ez, dy = ty - ey, hd = Math.hypot(dx, dz), dist = Math.hypot(hd, dy);
+      const lead = [0, 0.07, 0.13][this.diff];                           // упреждение: целимся туда, куда цель дойдёт
+      const dx = tb.x + tb.vx * lead - ex, dz = tb.z + tb.vz * lead - ez, dy = ty - ey, hd = Math.hypot(dx, dz), dist = Math.hypot(hd, dy);
       const dyaw = Math.atan2(-dx, -dz), dpitch = Math.atan2(dy, hd);
       const turn = this.D.turn * dt * (1 + clamp(Math.abs(angDiff(a.yaw, dyaw)), 0, 3) * 0.6);
       a.yaw += clamp(angDiff(a.yaw, dyaw), -turn, turn);
@@ -262,7 +306,9 @@ export class BotBrain {
       this.burstLeft = 0;
       // смотрим на шум / на точку, куда идём
       let want = this.lookYaw, wp = 0;
+      const info = m.tactics.recent(a.side, 3.5);
       if (this.noise && now - this.noise.t < 3) { want = Math.atan2(-(this.noise.x - a.body.x), -(this.noise.z - a.body.z)); }
+      else if (this.diff >= 1 && info && Math.hypot(info.x - a.body.x, info.z - a.body.z) < 40 && this.atGoal) want = Math.atan2(-(info.x - a.body.x), -(info.z - a.body.z));   // смотрим туда, где союзник видел врага
       else if (this.atGoal && this.holdYaw !== undefined) want = this.holdYaw;
       const turn = this.D.turn * 0.55 * dt;
       a.yaw += clamp(angDiff(a.yaw, want), -turn, turn);
@@ -292,6 +338,7 @@ export class BotBrain {
     const a = this.actor, m = this.m;
     if (!a.alive) return;
     const phase = m.rounds.phase;
+    if (a.dance && phase === 'live') a.dance = null;               // в бою не до танцев
     if (phase === 'buy' && m.mode === 'match') {
       if (!this.bought && m.time >= this.buyAt) { this.bought = true; botBuy(m, a); }
       a.frozen = false;
@@ -305,6 +352,22 @@ export class BotBrain {
     // после потери цели идём туда, где её видели
     this.decide(dt);
     const engaged = this.aimAndShoot(dt);
+    // укрытие: при малом здоровье или перезарядке на виду у врага отходим за угол
+    if (!this.rangeBot && !this.inCover && this.targetVisible && this.target && m.time > this.coverCool && !a.frozen && m.aliveCount(a.side) > 1) {
+      const dist = Math.hypot(this.target.body.x - a.body.x, this.target.body.z - a.body.z);
+      const reloading = a.reloadEnd > m.time && dist > 7;
+      if ((a.hp < 38 && this.diff >= 1) || (reloading && this.diff >= 1)) {
+        const idx = this.pickCover();
+        if (idx >= 0) { this.inCover = true; this.coverIdx = idx; this.coverUntil = m.time + (reloading ? Math.max(1.2, a.reloadEnd - m.time + 0.5) : 5); this.goalIdx = -1; }
+        else this.coverCool = m.time + 2;
+      }
+    }
+    if (this.inCover && (m.time > this.coverUntil || !a.alive)) { this.inCover = false; this.coverCool = m.time + 3; this.goalIdx = -1; }
+    // джигл-пик на удержании
+    if (this.state === 'hold' && this.atGoal && !engaged && this.diff >= 1 && !this.jiggle) {
+      this.jT -= dt;
+      if (this.jT <= 0) { this.jT = rand(5, 11); this.jiggle = { dir: Math.random() < 0.5 ? -1 : 1, until: m.time + 0.9, dur: 0.9 }; }
+    }
     if (!engaged && this.lastKnown && m.time - this.seenAt < 3 && this.state !== 'hold' && !this.rangeBot && !this.executing) {
       // охота: короткая проверка последнего места, потом возврат к плану
     }
@@ -319,7 +382,7 @@ export class BotBrain {
     } else this.holdYaw = undefined;
     // ходьба тише у точки (сложные боты)
     this.sneak = this.diff >= 2 && this.state === 'execute' && !this.targetVisible && !!this.plan && this.plan.role === 'atk' && this.nearSite(14);
-    this.move(dt, engaged);
+    this.move(dt, engaged && !(this.inCover && !this.atGoal));
 
     // перезарядка и оружие
     const g = a.gun;

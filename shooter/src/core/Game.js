@@ -31,8 +31,8 @@ export class Game {
     // оружие рисуется отдельной сценой, чтобы не проваливаться в стены
     this.vmScene = new THREE.Scene();
     this.vmCamera = new THREE.PerspectiveCamera(55, 1, 0.01, 5);
-    this.vmScene.add(new THREE.HemisphereLight(0xcfd8f0, 0x2a2f3a, 1.4));
-    const vl = new THREE.DirectionalLight(0xffffff, 1.2); vl.position.set(1, 2, 1); this.vmScene.add(vl);
+    this.vmScene.add(new THREE.HemisphereLight(0xe0e8ff, 0x59607a, 2.0));
+    const vl = new THREE.DirectionalLight(0xffffff, 2.0); vl.position.set(1, 2, 1); this.vmScene.add(vl);
 
     this.input = new Input(this.canvas);
     this.audio = new Synth();

@@ -67,6 +67,7 @@ export class Match {
       const p = new Actor(0, 'Вы', 0, cfg.agent, true);
       p.side = 'atk'; this.player = p; this.actors.push(p);
       this.player.ctrl = new Player(this, p);
+      mkModel(p); p.model.root.visible = false;
       return;
     }
     const mine = AGENT_IDS.filter((id) => id !== cfg.agent).sort(() => Math.random() - 0.5);
@@ -129,7 +130,7 @@ export class Match {
     a.alive = true; a.hp = 100;
     a.nextFire = a.reloadEnd = a.drawEnd = 0; a.fireSpread = 0; a.shotIdx = 0; a.burstLeft = 0; a.scope = 0;
     a.fx.slowUntil = a.fx.blindUntil = a.fx.revealUntil = 0; a.fx.buffs = []; a.fx.hot = []; a.fx.dash = null; a.fx.reduce = 0;
-    a.damagers.clear(); a.plantProgress = a.defuseProgress = 0; a.frozen = false;
+    a.dance = null; a.damagers.clear(); a.plantProgress = a.defuseProgress = 0; a.frozen = false;
     if (a.model) { a.model.update(a, 0); a.model.root.visible = !a.isPlayer; a.model.fall = 0; a.model.inner.rotation.x = 0; }
   }
   enemiesOf(a) { return this.actors.filter((t) => t.alive && t.side !== a.side); }

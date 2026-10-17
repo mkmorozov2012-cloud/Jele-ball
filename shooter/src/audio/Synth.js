@@ -157,6 +157,22 @@ export class Synth {
   roundStart() { [392, 523].forEach((f, i) => this.tone({ f0: f, dur: 0.25, type: 'triangle', gain: 0.2, delay: i * 0.12, bus: this.ui })); }
   roundEnd(win) { (win ? [523, 659, 784, 1047] : [392, 330, 262]).forEach((f, i) => this.tone({ f0: f, dur: 0.3, type: 'triangle', gain: 0.22, delay: i * 0.13, bus: this.ui })); }
 
+  // Бит для танца: кик, хэт и бас-линия, 120 ударов в минуту. Возвращает функцию остановки.
+  danceBeat(kind) {
+    if (!this.ensure()) return () => {};
+    const bass = { disco: [55, 55, 82, 55, 73, 55, 82, 98], robot: [65, 65, 0, 65, 98, 0, 65, 82], wave: [49, 0, 73, 0, 49, 0, 82, 73], spin: [55, 82, 55, 98, 55, 82, 110, 98], floss: [58, 58, 87, 58, 69, 58, 87, 103], jump: [62, 0, 62, 93, 62, 0, 78, 93] }[kind] || [55, 55, 82, 55];
+    let step = 0;
+    const id = setInterval(() => {
+      const i = step++ % 8;
+      if (i % 2 === 0) { this.tone({ f0: 150, f1: 42, dur: 0.16, type: 'sine', gain: 0.5, bus: this.ui }); }
+      this.noise({ dur: 0.04, type: 'highpass', f0: 7000, gain: i % 2 ? 0.12 : 0.06, bus: this.ui });
+      if (i % 4 === 2) this.noise({ dur: 0.1, type: 'bandpass', f0: 1800, q: 0.8, gain: 0.2, bus: this.ui });
+      const f = bass[i]; if (f) this.tone({ f0: f * 2, dur: 0.22, type: 'sawtooth', gain: 0.18, bus: this.ui });
+      if (i === 0 || i === 5) this.tone({ f0: f ? f * 8 : 440, dur: 0.12, type: 'square', gain: 0.05, bus: this.ui });
+    }, 250);
+    return () => clearInterval(id);
+  }
+
   // звуки интерфейса
   uiSnd(kind) {
     if (!this.ensure()) return;

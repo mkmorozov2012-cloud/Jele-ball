@@ -110,6 +110,12 @@ export class Effects {
     }
   }
 
+  // конфетти победителей
+  confetti(x, y, z, n = 40) {
+    const cols = [0xff7a1a, 0x19e0c8, 0xffd23f, 0xff3b5c, 0xc58bff, 0x7dff8a];
+    for (let k = 0; k < n; k++) this.spawn(x + rand(-0.5, 0.5), y + 1.5, z + rand(-0.5, 0.5), rand(-3, 3), rand(3, 7), rand(-3, 3), rand(0.05, 0.1), rand(1.4, 2.4), cols[k % cols.length], 5, true);
+  }
+
   puff(x, y, z, color, n = 10, spd = 3) {
     for (let k = 0; k < n; k++) this.spawn(x, y, z, rand(-spd, spd), rand(0, spd), rand(-spd, spd), rand(0.05, 0.12), rand(0.4, 0.9), color, 1);
   }

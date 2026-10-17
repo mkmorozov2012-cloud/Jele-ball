@@ -10,6 +10,8 @@ export const KINDS = {
   low:   { color: '#667391', surf: 'concrete' },
   stair: { color: '#6c7ca0', surf: 'metal' },
   patch: { color: '#2d3a4c', surf: 'sand' },
+  cont:  { color: '#b5472f', surf: 'metal' },
+  barrel: { color: '#c0392b', surf: 'metal' },
 };
 
 const mirrorBox = (b) => ({ ...b, x0: -(b.x0 + b.w) });
@@ -24,7 +26,7 @@ export function expandMap(def) {
     floor: def.floor || { surf: 'concrete' },
     boxes: [], zones: [], sites: {}, nodes: [],
     attackSpawns: def.attackSpawns || [], defendSpawns: def.defendSpawns || [],
-    targets: def.targets || [], range: !!def.range,
+    targets: def.targets || [], range: !!def.range, props: [],
   };
 
   const addBox = (kind, cx, cz, w, d, h, y0 = 0, extra = {}) => {
@@ -33,6 +35,15 @@ export function expandMap(def) {
     out.boxes.push(b);
     if (mirror && Math.abs(cx) > 0.01) out.boxes.push(mirrorBox(b));
   };
+
+  // Декор: ["lamp", x, z, высота] — фонарь, ["barrel", x, z] — бочка (с коллизией). Правая половина зеркалится.
+  for (const [type, px, pz, ph] of def.props || []) {
+    const put = (x) => {
+      if (type === 'barrel') { const c = ['#c0392b', '#2f6fa8', '#d6a21e', '#3d8f5a'][out.boxes.length % 4]; out.boxes.push({ kind: 'barrel', color: c, surf: 'metal', x0: x - 0.35, z0: pz - 0.35, y0: 0, w: 0.7, d: 0.7, h: 0.95 }); }
+      else out.props.push({ type, x, z: pz, h: ph || 4 });
+    };
+    put(px); if (mirror && Math.abs(px) > 0.01) put(-px);
+  }
 
   // внешние стены
   const t = 2, hh = 7;

@@ -25,7 +25,7 @@ export function botAbilities(brain) {
         if (t && dist > 7 && dist < 24 && Math.random() < 0.25) ok = true;
         break;
       case 'heal':
-        if (a.hp < 55 && !t) ok = true;
+        if (a.hp < 55 && (!t || brain.inCover)) ok = true;
         break;
       case 'buff':
         if (p.armor) { if (since > 3 && m.alliesOf(a).length) ok = Math.random() < 0.2; }
