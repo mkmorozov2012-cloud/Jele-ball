@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check-maps": "node tools/check-maps.mjs"
+    "check-maps": "node tools/check-maps.mjs",
+    "build:single": "vite build -c vite.single.config.js && node tools/make-single.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"
