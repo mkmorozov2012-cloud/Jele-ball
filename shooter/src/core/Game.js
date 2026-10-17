@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { settings } from './Settings.js';
+import { settings, IS_TOUCH } from './Settings.js';
 import { Input } from './Input.js';
 import { Synth } from '../audio/Synth.js';
 import { Match } from '../match/Match.js';
@@ -35,6 +35,7 @@ export class Game {
     const vl = new THREE.DirectionalLight(0xffffff, 2.0); vl.position.set(1, 2, 1); this.vmScene.add(vl);
 
     this.input = new Input(this.canvas);
+    if (IS_TOUCH) { this.input.touchMode = true; this.input.free = true; }
     this.audio = new Synth();
     this.match = null; this.state = 'menu';
     this.timeScale = 1;
@@ -51,7 +52,7 @@ export class Game {
       if (!locked && this.match && !this.match.paused && !this.match.uiOpen && !this.match.over) this.pause();
     };
     this.canvas.addEventListener('mousedown', () => {
-      if (this.match && !this.match.paused && !this.input.locked && !this.match.uiOpen && !this.match.over) { this.audio.ensure(); this.input.lock(); }
+      if (!IS_TOUCH && this.match && !this.match.paused && !this.input.locked && !this.match.uiOpen && !this.match.over) { this.audio.ensure(); this.input.lock(); }
     });
     this.ui = new UI(this);
     requestAnimationFrame((t) => this.frame(t));
@@ -97,7 +98,7 @@ export class Game {
     this.canvas.style.display = 'block';
     this.input.clear(); this.input.enabled = true;
     this.ui.onMatchStart(this.match);
-    this.input.lock();
+    if (!this.input.touchMode) this.input.lock();
   }
   endMatch(silent = false) {
     if (!this.match) return;
@@ -118,7 +119,7 @@ export class Game {
     if (!this.match) return;
     this.match.paused = false; this.input.clear(); this.input.enabled = true;
     this.ui.showPause(false);
-    this.input.lock();
+    if (!this.input.touchMode) this.input.lock();
   }
 
   // отладка: вид сверху (для проверки карт)

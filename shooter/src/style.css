@@ -214,3 +214,67 @@ button { font-family: inherit; color: inherit; }
 .screen { overflow-y: auto; padding: 4vh 6vw; }
 .screen h3 { margin-bottom: 8px; }
 .label { margin: 12px 0 6px; }
+
+/* ===== ТЕЛЕФОН: сенсорные кнопки и адаптация интерфейса ===== */
+html.touch, html.touch body { overscroll-behavior: none; touch-action: none; }
+html.touch * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+#touch { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+#touch .tz { position: absolute; top: 0; bottom: 0; pointer-events: auto; touch-action: none; }
+#touch .look { left: 0; right: 0; }
+#touch .stick { left: 0; width: 46%; top: 30%; }
+.tbase, .tknob { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.35; }
+.tbase { width: 120px; height: 120px; margin: -60px 0 0 -60px; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.06); }
+.tknob { width: 54px; height: 54px; margin: -27px 0 0 -27px; background: rgba(255, 255, 255, 0.55); }
+.tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.45); background: rgba(14, 20, 32, 0.55); color: #fff; font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; user-select: none; }
+.tb span { position: relative; z-index: 1; text-shadow: 0 1px 3px #000; }
+.tb.down { background: rgba(255, 210, 63, 0.45); border-color: var(--accent); transform: scale(0.94); }
+.tb.on { background: rgba(25, 224, 200, 0.4); border-color: var(--def); }
+.tb .cd { position: absolute; left: 0; bottom: 0; width: 100%; height: 0; background: rgba(0, 0, 0, 0.65); }
+.tb .n { position: absolute; top: 2px; right: 6px; font-size: 11px; font-style: normal; color: var(--accent); z-index: 1; }
+.tb.fire { right: max(18px, env(safe-area-inset-right, 0px)); bottom: 22px; width: 92px; height: 92px; font-size: 32px; background: rgba(255, 90, 40, 0.38); border-color: #ff9a5a; }
+.tb.aim { right: 128px; bottom: 28px; width: 62px; height: 62px; }
+.tb.jump { right: 30px; bottom: 128px; width: 60px; height: 60px; }
+.tb.crouch { right: 100px; bottom: 112px; width: 54px; height: 54px; }
+.tb.reload { right: 196px; bottom: 30px; width: 52px; height: 52px; }
+.tb.use { right: 196px; bottom: 90px; width: 52px; height: 52px; border-color: var(--accent); }
+.tb.use.hl { background: rgba(255, 210, 63, 0.5); animation: blink 0.7s steps(2) infinite; }
+.tb.ab { width: 50px; height: 50px; font-size: 15px; bottom: 148px; }
+.tb.ab.ready { border-color: var(--def); box-shadow: 0 0 10px rgba(25, 224, 200, 0.5); }
+.tb[data-id=ab1] { right: 252px; bottom: 100px; } .tb[data-id=ab2] { right: 266px; bottom: 162px; }
+.tb[data-id=ab3] { right: 192px; bottom: 156px; } .tb[data-id=ult] { right: 140px; bottom: 198px; }
+.tb.sm { width: 38px; height: 38px; font-size: 14px; top: 8px; }
+.tb.swap { right: 18px; top: 150px; } .tb[data-id=buy] { right: 18px; top: 198px; } .tb[data-id=emote] { right: 18px; top: 246px; } .tb[data-id=scores] { right: 18px; top: 104px; } .tb[data-id=pause] { right: 18px; top: 56px; }
+#rotate { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 30px; background: #0a0d14; font-size: 20px; z-index: 20; }
+@media (orientation: portrait) { html.touch #rotate { display: flex; } }
+
+@media (pointer: coarse), (max-width: 900px) {
+  .screen { padding: 3vh 4vw; } .screen h3 { font-size: 24px; margin-bottom: 4px; } .screen h2 { font-size: 11px; }
+  .brand h1 { font-size: clamp(36px, 12vh, 70px); } .brand p { margin: 6px 0 12px; font-size: 11px; letter-spacing: 0.3em; }
+  .logo-prism { width: 34px; height: 34px; margin-bottom: 6px; }
+  .menu { gap: 6px; } .menu .btn { width: 260px; font-size: 14px; padding: 9px 20px; } .foot { display: none; }
+  .btn { padding: 9px 18px; font-size: 13px; }
+  .cards { gap: 10px; } .card { width: 200px; padding: 8px; } .card canvas { max-height: 120px; } .card b { font-size: 15px; } .card span { font-size: 11px; }
+  .seg button { padding: 7px 12px; font-size: 12px; } .label { margin: 8px 0 4px; }
+  .agents, .arsenal { gap: 10px; } .alist { width: 150px; gap: 5px; } .acard { padding: 6px 8px; gap: 8px; } .acard b { font-size: 14px; } .emblem { width: 32px; height: 32px; font-size: 15px; }
+  .adet { padding: 12px 14px; } .adet h4 { font-size: 26px; } .abl { padding: 7px 0; gap: 8px; } .abl p { font-size: 12px; } .abl .k { width: 26px; height: 26px; }
+  .wlist { width: 150px; } .witem { padding: 7px 8px; font-size: 13px; } .wdet { grid-template-columns: 1fr; padding: 12px 14px; } .wdet h4 { font-size: 24px; } .stat { grid-template-columns: 90px 1fr 60px; font-size: 11px; margin: 4px 0; } .recoil { max-width: 180px; }
+  .wtabs button { padding: 5px 8px; font-size: 11px; }
+  .set { grid-template-columns: 130px 1fr 52px; gap: 8px; font-size: 12px; margin: 6px 0; } .keys { grid-template-columns: 1fr; } .chprev { width: 130px; height: 130px; margin-left: 10px; }
+  .panel { padding: 10px 14px; }
+  #shop { padding: 2vh 3vw; } .shop-body { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; } .item { padding: 6px 8px; } .item b { font-size: 13px; }
+  .results { padding: 12px 16px; } .results h3 { font-size: 30px; } .results .big { font-size: 24px; } .results table { font-size: 11px; margin: 4px 0 8px; }
+  .modal { padding: 16px 22px; min-width: 260px; }
+  /* HUD компактнее */
+  .h-top { transform: scale(0.72); transform-origin: top center; top: 2px; }
+  .h-mini { width: 118px; top: 4px; left: max(6px, env(safe-area-inset-left, 0px)); } #hZone { font-size: 9px; padding: 2px 5px; min-height: 16px; }
+  .h-kill { top: 4px; right: 70px; } .kf { font-size: 11px; padding: 3px 8px; }
+  .h-bl { left: max(10px, env(safe-area-inset-left, 0px)); bottom: 8px; transform: scale(0.7); transform-origin: bottom left; }
+  .h-br { right: 0; bottom: auto; top: 44%; display: none; }
+  #hMoney { position: absolute; }
+  #hMsg { font-size: 20px; } #hHint { bottom: 40%; font-size: 12px; } #hProg { bottom: 46%; width: 200px; }
+  #hSpec { bottom: 40px; font-size: 12px; } #hFps { left: auto; right: 4px; bottom: 2px; transform: none; }
+  #hScores { width: 94vw; padding: 8px 10px; } #hScores table { font-size: 11px; margin-bottom: 6px; }
+}
+html.touch .h-abil { display: none; }
+html.touch .h-br { display: block; right: auto; left: 50%; bottom: 4px; top: auto; text-align: center; transform: translateX(-50%) scale(0.6); transform-origin: bottom center; white-space: nowrap; }
+html.touch .h-mini { width: 112px; }

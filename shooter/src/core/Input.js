@@ -27,18 +27,19 @@ export class Input {
     this.enabled = false;       // игровой ввод (не в меню)
     this.rebinding = null;      // callback при переназначении клавиши
     this.onLockChange = null;
-    this.free = false;          // отладка: ввод без Pointer Lock
+    this.free = false;          // ввод без Pointer Lock (отладка, телефон, песочница)
+    this.touchMode = false;     // игра на телефоне: настоящие события мыши игнорируем
 
     addEventListener('keydown', (e) => this.key(e, true));
     addEventListener('keyup', (e) => this.key(e, false));
     addEventListener('mousedown', (e) => {
       if (this.rebinding && e.target.closest?.('.rebind')) return;
-      if (!this.enabled) return;
+      if (!this.enabled || this.touchMode) return;
       this.mouse.add(e.button); this.mouseEdge.add(e.button);
     });
     addEventListener('mouseup', (e) => this.mouse.delete(e.button));
     addEventListener('mousemove', (e) => {
-      if (!this.enabled || !(this.locked || this.free)) return;
+      if (!this.enabled || this.touchMode || !(this.locked || this.free)) return;
       this.dx += e.movementX; this.dy += e.movementY;
     });
     addEventListener('wheel', (e) => { if (this.enabled) this.wheel += Math.sign(e.deltaY); }, { passive: true });

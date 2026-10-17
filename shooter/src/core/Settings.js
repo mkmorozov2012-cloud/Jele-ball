@@ -2,12 +2,15 @@ import { Emitter } from './Events.js';
 
 // Все настройки игрока. Хранятся в localStorage, при ошибке — просто в памяти.
 const KEY = 'prismnoir.settings.v1';
+// Телефон: сенсорный основной указатель (или принудительный режим в мобильной сборке)
+export const FORCE_TOUCH = typeof __FORCE_TOUCH__ !== 'undefined' && __FORCE_TOUCH__;
+export const IS_TOUCH = FORCE_TOUCH || (typeof location !== 'undefined' && /touch=1/.test(location.search)) || (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches);
 
 export const DEFAULTS = {
   sens: 1.0,                      // множитель чувствительности мыши
   crosshair: { color: '#19e0c8', size: 7, thickness: 2, gap: 4, shape: 'cross', dot: false, opacity: 1 },
   volume: { master: 0.7, sfx: 1, ui: 0.8 },
-  graphics: { quality: 'medium', fpsCap: 0, fov: 100, showFps: true, shake: 1 },
+  graphics: { quality: IS_TOUCH ? 'low' : 'medium', fpsCap: 0, fov: IS_TOUCH ? 95 : 100, showFps: !IS_TOUCH, shake: IS_TOUCH ? 0.7 : 1 },
   keys: {
     forward: ['KeyW'], back: ['KeyS'], left: ['KeyA'], right: ['KeyD'],
     jump: ['Space'], crouch: ['ControlLeft', 'KeyZ'], walk: ['ShiftLeft'],

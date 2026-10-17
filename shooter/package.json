@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check-maps": "node tools/check-maps.mjs",
-    "build:single": "vite build -c vite.single.config.js && node tools/make-single.mjs"
+    "build:single": "vite build -c vite.single.config.js && node tools/make-single.mjs",
+    "build:mobile": "MOBILE=1 vite build -c vite.single.config.js && MOBILE=1 node tools/make-single.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"

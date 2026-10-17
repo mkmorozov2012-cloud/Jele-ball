@@ -31,7 +31,7 @@ export class Shop {
     if (!this.open_ && !silent) return;
     this.open_ = false; this.el.classList.remove('active');
     if (this.m) this.m.uiOpen = null;
-    if (!silent && this.m && !this.m.paused) { this.game.input.enabled = true; this.game.input.clear(); this.game.input.lock(); }
+    if (!silent && this.m && !this.m.paused) { this.game.input.enabled = true; this.game.input.clear(); if (!this.game.input.touchMode) this.game.input.lock(); }
   }
   toggle() { this.open_ ? this.close() : this.open(); }
 

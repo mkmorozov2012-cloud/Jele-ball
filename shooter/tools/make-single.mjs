@@ -8,5 +8,6 @@ html = html.replace(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g, (m, h) =
 let js = '';
 html = html.replace(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/g, (m, s) => { js = read(s); return ''; });
 html = html.replace('</body>', () => `<script>${js.replace(/<\/script>/g, '<\\/script>')}</script></body>`);
-fs.writeFileSync(new URL('../play.html', import.meta.url), html);
-console.log('play.html:', (html.length / 1024).toFixed(0), 'КБ');
+const out = process.env.MOBILE === '1' ? 'play-mobile.html' : 'play.html';
+fs.writeFileSync(new URL('../' + out, import.meta.url), html);
+console.log(out + ':', (html.length / 1024).toFixed(0), 'КБ');

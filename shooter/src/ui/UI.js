@@ -10,6 +10,8 @@ import { Minimap } from '../world/Minimap.js';
 import { settings } from '../core/Settings.js';
 import { DIFFS } from '../bots/BotBrain.js';
 import { ECON } from '../weapons/Weapons.js';
+import { Touch } from './Touch.js';
+import { IS_TOUCH } from '../core/Settings.js';
 
 // Менеджер интерфейса: экраны меню, переходы, HUD, закупка, пауза, итоги.
 export class UI {
@@ -21,6 +23,7 @@ export class UI {
     this.screensEl = this.root.querySelector('#screens');
     this.hud = new Hud(this.root);
     this.shop = new Shop(this.root); this.shop.game = game;
+    if (IS_TOUCH) { this.root.classList.add('touch'); document.documentElement.classList.add('touch'); this.touch = new Touch(game, this.root); }
     this.cfg = { ...settings.data.last, mode: 'match' };
     this.screens = {};
     this.cur = null; this.back = [];
@@ -149,7 +152,15 @@ export class UI {
     det.style.animation = 'none'; void det.offsetWidth; det.style.animation = '';
   }
 
+  // на телефоне уходим в полный экран и горизонтальную ориентацию (если окно это разрешает)
+  goFullscreen() {
+    if (!IS_TOUCH) return;
+    try { document.documentElement.requestFullscreen?.().catch(() => {}); } catch { /* не разрешено */ }
+    try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch { /* не разрешено */ }
+  }
+
   launch() {
+    this.goFullscreen();
     settings.data.last = { map: this.cfg.map, diff: this.cfg.diff, agent: this.cfg.agent, side: this.cfg.side };
     settings.save();
     const fade = this.fade; fade.classList.add('on');
@@ -241,6 +252,7 @@ export class UI {
 
   update(dt) {
     const m = this.game.match;
+    this.touch?.update(m);
     if (m) { this.hud.update(dt, this.game); this.shop.update(); }
     else this.bg.draw(dt);
   }
