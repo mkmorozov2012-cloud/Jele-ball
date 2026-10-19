@@ -1,0 +1,57 @@
+{
+  "lumen": {
+    "id": "lumen", "name": "Люмен", "role": "Разведчик", "color": "#ffd23f",
+    "desc": "Видит то, что скрыто. Зонды и импульсы показывают врагов сквозь стены.",
+    "ultCost": 7,
+    "abilities": [
+      { "slot": "ab1", "key": "C", "name": "Зонд", "desc": "Бросает зонд в точку прицела: враги рядом подсвечиваются для всей команды.", "type": "zone", "cost": 200, "maxCharges": 1, "cd": 2, "params": { "radius": 9, "dur": 8, "range": 26, "enemyReveal": true, "color": "#ffd23f" } },
+      { "slot": "ab2", "key": "Q", "name": "Кувырок", "desc": "Быстрый рывок вперёд.", "type": "dash", "cost": 150, "maxCharges": 1, "cd": 2, "params": { "speed": 15, "dur": 0.24 } },
+      { "slot": "ab3", "key": "E", "name": "Импульс", "desc": "Волна вокруг вас на 2,5 с подсвечивает врагов в радиусе 24 м.", "type": "reveal", "cost": 0, "maxCharges": 1, "cd": 38, "recharge": true, "params": { "radius": 24, "dur": 2.5 } },
+      { "slot": "ult", "key": "X", "name": "Всевидящий", "desc": "На 7 секунд подсвечивает всех врагов на карте.", "type": "reveal", "cost": 7, "params": { "radius": 999, "dur": 7 } }
+    ]
+  },
+  "mgla": {
+    "id": "mgla", "name": "Мгла", "role": "Дымовой", "color": "#9aa7ff",
+    "desc": "Мастер завес. Блокирует обзор на ключевых проходах и травит врагов облаками.",
+    "ultCost": 8,
+    "abilities": [
+      { "slot": "ab1", "key": "C", "name": "Шашка", "desc": "Дымовая завеса в точке прицела на 14 секунд.", "type": "zone", "cost": 100, "maxCharges": 2, "cd": 2, "params": { "radius": 4.2, "dur": 14, "range": 24, "smoke": true, "color": "#aab3c8" } },
+      { "slot": "ab2", "key": "Q", "name": "Ядовитое облако", "desc": "Облако наносит врагам урон каждую секунду.", "type": "zone", "cost": 250, "maxCharges": 1, "cd": 3, "params": { "radius": 4, "dur": 6, "range": 20, "enemyDps": 16, "color": "#7ad06a" } },
+      { "slot": "ab3", "key": "E", "name": "Пелена", "desc": "Короткая густая завеса, восстанавливается со временем.", "type": "zone", "cost": 0, "maxCharges": 1, "cd": 45, "recharge": true, "params": { "radius": 4.5, "dur": 8, "range": 22, "smoke": true, "color": "#9aa7ff" } },
+      { "slot": "ult", "key": "X", "name": "Великая мгла", "desc": "Огромная завеса на 22 секунды.", "type": "zone", "cost": 8, "params": { "radius": 9, "dur": 22, "range": 30, "smoke": true, "color": "#aab3c8" } }
+    ]
+  },
+  "vihr": {
+    "id": "vihr", "name": "Вихрь", "role": "Штурмовик", "color": "#ff5d73",
+    "desc": "Быстрый боец первой линии. Ослепляет, прыгает в бой и ускоряется.",
+    "ultCost": 6,
+    "abilities": [
+      { "slot": "ab1", "key": "C", "name": "Вспышка", "desc": "Ослепляет всех, кто смотрит на вспышку в точке прицела.", "type": "flash", "cost": 200, "maxCharges": 2, "cd": 1.5, "params": { "dur": 1.9, "range": 30, "radius": 28 } },
+      { "slot": "ab2", "key": "Q", "name": "Рывок", "desc": "Мощный бросок в направлении взгляда.", "type": "dash", "cost": 150, "maxCharges": 1, "cd": 2, "params": { "speed": 19, "dur": 0.22 } },
+      { "slot": "ab3", "key": "E", "name": "Адреналин", "desc": "+30% к скорости на 6 секунд.", "type": "buff", "cost": 0, "maxCharges": 1, "cd": 35, "recharge": true, "params": { "dur": 6, "speed": 0.3 } },
+      { "slot": "ult", "key": "X", "name": "Берсерк", "desc": "12 секунд: быстрее бег и стрельба, убийства лечат.", "type": "buff", "cost": 6, "params": { "dur": 12, "speed": 0.25, "fireRate": 0.3, "lifesteal": 0.4 } }
+    ]
+  },
+  "loza": {
+    "id": "loza", "name": "Лоза", "role": "Поддержка", "color": "#7dff8a",
+    "desc": "Лечит союзников и себя, усиливает щиты и возвращает павших.",
+    "ultCost": 8,
+    "abilities": [
+      { "slot": "ab1", "key": "C", "name": "Целебный круг", "desc": "Круг на земле лечит союзников на 16 здоровья в секунду.", "type": "zone", "cost": 200, "maxCharges": 1, "cd": 2, "params": { "radius": 4, "dur": 7, "range": 20, "allyHeal": 16, "color": "#7dff8a" } },
+      { "slot": "ab2", "key": "Q", "name": "Живица", "desc": "Восстанавливает вам 60 здоровья за 2,5 секунды.", "type": "heal", "cost": 100, "maxCharges": 2, "cd": 3, "params": { "amount": 60, "over": 2.5 } },
+      { "slot": "ab3", "key": "E", "name": "Оберег", "desc": "Даёт +25 щита союзникам в радиусе 14 м.", "type": "buff", "cost": 0, "maxCharges": 1, "cd": 45, "recharge": true, "params": { "dur": 1, "armor": 25, "radius": 14 } },
+      { "slot": "ult", "key": "X", "name": "Возрождение", "desc": "Возвращает в бой последнего павшего союзника на месте смерти.", "type": "revive", "cost": 8, "params": {} }
+    ]
+  },
+  "straz": {
+    "id": "straz", "name": "Страж", "role": "Сторож", "color": "#c58bff",
+    "desc": "Держит позицию: растяжки, барьер, автоматическая турель и защитный купол.",
+    "ultCost": 8,
+    "abilities": [
+      { "slot": "ab1", "key": "C", "name": "Растяжка", "desc": "Невидимая ловушка: замедляет и подсвечивает вошедших врагов.", "type": "zone", "cost": 150, "maxCharges": 2, "cd": 2, "params": { "radius": 3.2, "dur": 30, "range": 14, "enemySlow": 0.5, "enemyReveal": true, "trap": true, "color": "#c58bff" } },
+      { "slot": "ab2", "key": "Q", "name": "Барьер", "desc": "Ставит стену, перекрывающую проход на 10 секунд.", "type": "wall", "cost": 200, "maxCharges": 1, "cd": 3, "params": { "w": 6, "h": 3, "d": 0.8, "dur": 10, "range": 12 } },
+      { "slot": "ab3", "key": "E", "name": "Турель", "desc": "Автоматическая турель стреляет по врагам в поле зрения 18 секунд.", "type": "turret", "cost": 0, "maxCharges": 1, "cd": 50, "recharge": true, "params": { "dur": 18, "range": 28, "dmg": 9, "rate": 5, "hp": 80 } },
+      { "slot": "ult", "key": "X", "name": "Цитадель", "desc": "Купол на 14 с: союзники получают на 40% меньше урона, враги замедлены.", "type": "zone", "cost": 8, "params": { "radius": 10, "dur": 14, "range": 18, "enemySlow": 0.3, "allyReduce": 0.4, "color": "#c58bff" } }
+    ]
+  }
+}
