@@ -33,6 +33,8 @@ export class Match {
     this.over = false;
 
     const def = this.mode === 'range' ? RANGE_MAP : MAPS[cfg.map];
+    game.setSky(def.visual === 'dust' ? 'desert' : 'redwall');
+    game.applyGraphics();
     const loaded = loadMap(def);
     this.map = loaded.exp; this.world = loaded.world; this.nav = loaded.nav;
     this.group = new THREE.Group();

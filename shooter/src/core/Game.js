@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { settings, IS_TOUCH } from './Settings.js';
 import { Input } from './Input.js';
 import { Synth } from '../audio/Synth.js';
@@ -15,18 +16,21 @@ export class Game {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(PALETTE.bg);
-    this.scene.fog = new THREE.Fog(PALETTE.bg, 60, 150);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.scene.background = new THREE.Color(0xb9aea4);                 // пока грузится панорама
+    this.scene.fog = new THREE.Fog(0xb9aea4, 70, 190);
+    this.fogBase = 190; this.hdri = {};
     this.camera = new THREE.PerspectiveCamera(75, 1, 0.05, 400);
     this.scene.add(this.camera);
 
     // свет: мягкое небо + одно направленное солнце (единственный источник теней)
-    this.scene.add(new THREE.HemisphereLight(0xb4c8f0, 0x2a3040, 1.7));
-    this.sun = new THREE.DirectionalLight(0xfff1dc, 1.6);
+    this.hemi = new THREE.HemisphereLight(0xf2ece4, 0x6a6258, 2.6); this.scene.add(this.hemi);
+    this.sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
     this.sun.position.set(34, 70, 22);
     const sc = this.sun.shadow.camera; sc.left = -52; sc.right = 52; sc.top = 52; sc.bottom = -52; sc.near = 10; sc.far = 160;
     this.sun.shadow.bias = -0.0006;
     this.scene.add(this.sun);
+    this.setSky('redwall');
 
     // оружие рисуется отдельной сценой, чтобы не проваливаться в стены
     this.vmScene = new THREE.Scene();
@@ -58,6 +62,26 @@ export class Game {
     requestAnimationFrame((t) => this.frame(t));
   }
 
+  // небо, туман и свет под карту: 'redwall' — серый город (Red Wall), 'desert' — солнечный день над песчаным кварталом (Poly Haven, CC0)
+  setSky(kind) {
+    const desert = kind === 'desert', sc = this.sun.shadow.camera;
+    if (this.skyKind === kind) return;
+    this.skyKind = kind;
+    const file = desert ? 'desert_sky' : 'red_wall', cfg = desert
+      ? { fog: 0xe4d3b0, near: 90, far: 300, env: 0.7, exp: 0.95, hemi: [0xdfeaff, 0xb59a70, 0.9], sun: [0xfff0d2, 3.4, [-55, 70, 38]], ext: 80 }
+      : { fog: 0xb9aea4, near: 70, far: 190, env: 0.8, exp: 1, hemi: [0xf2ece4, 0x6a6258, 2.6], sun: [0xfff1dc, 2.4, [34, 70, 22]], ext: 52 };
+    this.scene.background = new THREE.Color(cfg.fog); this.scene.fog.color.set(cfg.fog);
+    this.scene.fog.near = cfg.near; this.fogBase = cfg.far;
+    this.renderer.toneMappingExposure = cfg.exp; this.scene.environmentIntensity = cfg.env;
+    this.hemi.color.set(cfg.hemi[0]); this.hemi.groundColor.set(cfg.hemi[1]); this.hemi.intensity = cfg.hemi[2];
+    this.sun.color.set(cfg.sun[0]); this.sun.intensity = cfg.sun[1]; this.sun.position.set(...cfg.sun[2]);
+    sc.left = sc.bottom = -cfg.ext; sc.right = sc.top = cfg.ext; sc.far = desert ? 220 : 160; sc.updateProjectionMatrix();
+    this.scene.fog.far = cfg.far;
+    const apply = (tex) => { if (this.skyKind !== kind) return; this.scene.background = tex; this.scene.environment = tex; };
+    if (this.hdri[file]) apply(this.hdri[file]);
+    else new RGBELoader().load(`${import.meta.env.BASE_URL}hdri/${file}.hdr`, (tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; this.hdri[file] = tex; apply(tex); });
+  }
+
   resize() {
     const w = innerWidth, h = innerHeight;
     this.renderer.setSize(w, h, false);
@@ -85,7 +109,7 @@ export class Game {
     this.sun.castShadow = q !== 'low';
     const size = q === 'high' ? 2048 : 1024;
     if (this.sun.shadow.mapSize.x !== size) { this.sun.shadow.mapSize.set(size, size); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null; }
-    this.scene.fog.far = q === 'low' ? 110 : 150;
+    this.scene.fog.far = this.fogBase * (q === 'low' ? 0.75 : 1);
     this.renderer.setSize(innerWidth, innerHeight, false);
   }
 

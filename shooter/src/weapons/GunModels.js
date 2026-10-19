@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { loadReal } from './RealGuns.js';
 
 // Процедурные 3D-модели оружия из десятков деталей: ствол, ресивер, прицелы, магазины, приклады.
 // Все модели смотрят в -Z, начало координат — у рукояти. Подвижные части (затвор, магазин, помпа)
@@ -223,5 +224,39 @@ export function buildGun(def) {
   const o = { group: g, muzzle: new THREE.Vector3(), eject: new THREE.Vector3(), hands: null, slide: null, mag: null, pump: null, bolt: null };
   (BUILD[def.type] || rifle)(def, g, o);
   g.traverse((m) => { if (m.isMesh) m.castShadow = false; });
+  applyReal(def, g);
   return o;
+}
+
+// Какую реалистичную модель (public/models/*.glb) ставить вместо процедурной. Модели повторяются: их 11, оружия 20.
+const REAL = {
+  spark: 'colt_m1911', pin: 'makarov_pm', swarm: 'makarov_pm', fang: 'colt_m1911', thunder: 'desert_eagle',
+  fly: 'ak47_tactical', wasp: 'akm_kryptek', bumble: 'ak74m',
+  boar: 'mosin_1938', wall: 'kar98k',
+  wind: 'ak47_akm', cheetah: 'ak74m', cliff: 'akm_kryptek', bulwark: 'ak47_tactical',
+  needle: 'sniper_djmaesen', horizon: 'modern_sniper', eye: 'kar98k',
+  roller: 'ak47_akm', hammer: 'ak74m',
+};
+
+// Процедурная модель остаётся как запасная и как «источник» точек дула/рук; glb подменяет только вид.
+function applyReal(def, g) {
+  const key = REAL[def.id];
+  if (!key) return;
+  const old = [...g.children];
+  loadReal(key).then((wrap) => {
+    const L = def.model.len, len = L * (def.type === 'pistol' ? 1.15 : 1.25);
+    const holder = new THREE.Group();
+    holder.add(wrap);
+    holder.scale.setScalar(len);
+    const top = SIGHT[def.type] ?? 0.08;
+    holder.position.set(0, top - wrap.userData.height * len * 0.5, -L + len / 2);   // дуло — там же, где у процедурной
+    wrap.traverse((m) => {
+      if (!m.isMesh) return;
+      m.castShadow = false; m.frustumCulled = false;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      for (const mat of mats) { if (mat.metalness > 0.25) mat.metalness = 0.25; mat.envMapIntensity = 0; }
+    });
+    old.forEach((c) => { c.visible = false; });
+    g.add(holder);
+  }).catch((e) => console.warn('glb не загрузился, остаётся процедурная модель:', key, e));
 }

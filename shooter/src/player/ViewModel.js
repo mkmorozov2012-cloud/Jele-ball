@@ -6,20 +6,26 @@ import { damp, clamp } from '../core/Util.js';
 // Оружие от первого лица: детальная 3D-модель + руки + анимации:
 // покачивание при ходьбе, инерция при повороте мыши, отдача, затвор/помпа/затворная рукоять,
 // настоящая перезарядка (рука достаёт магазин и вставляет новый), доставание, прицеливание, удар ножом.
-const SLEEVE = new THREE.MeshLambertMaterial({ color: 0x3b475c });
-const GLOVE = new THREE.MeshLambertMaterial({ color: 0x5b6579 });
-const BAND = new THREE.MeshBasicMaterial({ color: 0x19e0c8 });
+const SLEEVE = new THREE.MeshStandardMaterial({ color: 0x4d5a3e, roughness: 0.95 });       // оливковая ткань формы
+const GLOVE = new THREE.MeshStandardMaterial({ color: 0x1f2226, roughness: 0.7 });        // чёрная перчатка
+const GLOVE_PAD = new THREE.MeshStandardMaterial({ color: 0x2c3036, roughness: 0.6 });
 const FLASH = new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 const FLASH_CORE = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 const bx = (w, h, d, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
 const SCALE = 0.56;
 
-// рука: перчатка + предплечье, уходящее назад-вниз за экран
+// рука: тактическая перчатка из скруглённых форм (ладонь, пальцы, большой палец) + рукав, уходящий назад-вниз за экран
+const capsule = (r, len, mat, x, y, z, rx = 0, ry = 0, rz = 0) => {
+  const o = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 4, 10), mat);
+  o.rotation.set(Math.PI / 2 + rx, ry, rz); o.position.set(x, y, z); return o;   // капсула вдоль оси Z
+};
 function makeHand(side) {
   const g = new THREE.Group();
-  g.add(bx(0.062, 0.05, 0.09, GLOVE));                                         // кисть
-  const fore = bx(0.07, 0.065, 0.46, SLEEVE, side * 0.03, -0.045, 0.28); fore.rotation.set(-0.28, -side * 0.12, 0); g.add(fore);
-  g.add(bx(0.074, 0.02, 0.05, BAND, side * 0.012, -0.012, 0.075));             // браслет-манжета
+  const palm = capsule(0.027, 0.03, GLOVE, 0, 0, 0.005); palm.scale.set(1.5, 1, 1); g.add(palm);                  // ладонь
+  for (let i = 0; i < 4; i++) g.add(capsule(0.0105, 0.045 - Math.abs(i - 1.3) * 0.004, GLOVE, (i - 1.5) * 0.02 * side, 0.004, -0.058, -0.25));   // пальцы, слегка согнуты
+  g.add(capsule(0.012, 0.035, GLOVE, -side * 0.036, -0.004, -0.025, -0.1, 0, side * 0.7));                         // большой палец
+  g.add(capsule(0.03, 0.02, GLOVE_PAD, 0, -0.012, 0.045));                                             // нашивка на запястье
+  const fore = capsule(0.034, 0.4, SLEEVE, side * 0.03, -0.045, 0.28, 0, 0, 0); fore.rotation.set(Math.PI / 2 - 0.28, -side * 0.12, 0); g.add(fore);
   return g;
 }
 

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Просмотр оружия</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #12151c; color: #e8ecf4; display: flex; height: 100vh; }
+  #side { width: 290px; flex: none; overflow-y: auto; padding: 12px; background: #181c26; border-right: 1px solid #2a3142; }
+  #side h1 { font-size: 16px; margin: 0 0 8px; }
+  #side h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #8b95ab; margin: 16px 0 6px; }
+  .item { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .item:hover { background: #222939; }
+  .item.active { background: #2a3350; border-color: #ffb347; }
+  .item input { width: 18px; height: 18px; accent-color: #ffb347; cursor: pointer; }
+  .item .n { flex: 1; font-size: 14px; }
+  .item .s { font-size: 11px; color: #8b95ab; }
+  #main { flex: 1; position: relative; min-width: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #info { position: absolute; left: 12px; top: 12px; font-size: 13px; background: #000a; padding: 8px 12px; border-radius: 6px; max-width: 70%; }
+  #msg { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 15px; color: #8b95ab; }
+  #out { margin-top: 16px; padding: 8px; background: #0e1118; border-radius: 6px; font-size: 12px; white-space: pre-wrap; color: #b8c2d8; }
+  button { background: #ffb347; color: #111; border: 0; border-radius: 6px; padding: 8px 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  @media (max-width: 700px) { body { flex-direction: column; } #side { width: 100%; height: 40vh; border-right: 0; } }
+</style>
+</head>
+<body>
+<div id="side">
+  <h1>Модели оружия</h1>
+  <div style="font-size:12px;color:#8b95ab">Нажми на модель, чтобы посмотреть. Мышь: вращать — левая кнопка, приблизить — колесо, сдвиг — правая.</div>
+  <div id="list"></div>
+  <button id="copy">Показать мой выбор</button>
+  <div id="out"></div>
+</div>
+<div id="main">
+  <canvas id="c"></canvas>
+  <div id="info"></div>
+  <div id="msg">Выбери модель слева</div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const MODELS = [
+  { cat: 'Пистолеты', id: 'colt_m1911', name: 'Colt M1911', by: 'Ole Gunnar Isager' },
+  { cat: 'Пистолеты', id: 'desert_eagle', name: 'Desert Eagle', by: 'ELIZION' },
+  { cat: 'Пистолеты', id: 'makarov_pm', name: 'Makarov PM', by: 'Martin Trafas' },
+  { cat: 'Автоматы', id: 'ak74m', name: 'AK-74M', by: 'FJH' },
+  { cat: 'Автоматы', id: 'ak47_tactical', name: 'AK 47 Tactical Upgrade', by: 'SpatialNeglect' },
+  { cat: 'Автоматы', id: 'akm_kryptek', name: 'AKM Kryptek Highlander', by: 'SpatialNeglect' },
+  { cat: 'Автоматы', id: 'ak47_akm', name: 'AK-47/AKM', by: 'Kelisei Ventura' },
+  { cat: 'Снайперки', id: 'sniper_djmaesen', name: 'Sniper', by: 'DJMaesen' },
+  { cat: 'Снайперки', id: 'modern_sniper', name: 'Modern Sniper Rifle', by: 'Vlasov Daniil' },
+  { cat: 'Снайперки', id: 'kar98k', name: 'Kar98k', by: 'Danya' },
+  { cat: 'Снайперки', id: 'mosin_1938', name: 'Mosin 1938', by: 'e.belous' },
+  { cat: 'Игроки', id: 'soldier', name: 'Soldier (three.js, анимации)', by: 'Mixamo / three.js' },
+];
+
+let kept = new Set();
+try { kept = new Set(JSON.parse(localStorage.getItem('kept-guns') || '[]')); } catch {}
+const save = () => { try { localStorage.setItem('kept-guns', JSON.stringify([...kept])); } catch {} };
+
+// ---- сцена ----
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x232a3a);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 4, 5); scene.add(key);
+const rim = new THREE.DirectionalLight(0x9ec4ff, 1.2); rim.position.set(-4, 2, -3); scene.add(rim);
+const grid = new THREE.GridHelper(4, 20, 0x3a4560, 0x2d3650); scene.add(grid);
+
+const loader = new GLTFLoader();
+const cache = new Map();
+let current = null;
+
+function resize() {
+  const m = document.getElementById('main');
+  renderer.setSize(m.clientWidth, m.clientHeight, false);
+  camera.aspect = m.clientWidth / m.clientHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+function fit(obj) {
+  // нормализуем: самая длинная сторона = 1.6 м, центр в начале координат
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const k = 1.6 / Math.max(size.x, size.y, size.z);
+  obj.scale.multiplyScalar(k);
+  box.setFromObject(obj);
+  const c = box.getCenter(new THREE.Vector3());
+  obj.position.sub(c);
+  box.setFromObject(obj);
+  grid.position.y = box.min.y - 0.05;
+  camera.position.set(1.4, 0.6, 1.8); controls.target.set(0, 0, 0); controls.update();
+  return size.multiplyScalar(k);
+}
+
+function countTris(obj) {
+  let t = 0;
+  obj.traverse((o) => { if (o.isMesh) t += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+  return Math.round(t);
+}
+
+async function show(m) {
+  document.querySelectorAll('.item').forEach((e) => e.classList.toggle('active', e.dataset.id === m.id));
+  const msg = document.getElementById('msg'); msg.textContent = 'Загрузка…'; msg.style.display = 'grid';
+  try {
+    let gltf = cache.get(m.id);
+    if (!gltf) { gltf = await loader.loadAsync(`./models/${m.id}.glb`); cache.set(m.id, gltf); }
+    if (current) scene.remove(current);
+    current = gltf.scene; current.position.set(0, 0, 0); current.scale.set(1, 1, 1);
+    scene.add(current);
+    fit(current);
+    msg.style.display = 'none';
+    document.getElementById('info').innerHTML = `<b>${m.name}</b><br>${countTris(current).toLocaleString('ru')} треугольников · автор ${m.by} · CC-BY`;
+  } catch (e) { msg.textContent = 'Ошибка загрузки: ' + e.message; }
+}
+
+// ---- список ----
+const list = document.getElementById('list');
+let cat = '';
+for (const m of MODELS) {
+  if (m.cat !== cat) { cat = m.cat; const h = document.createElement('h2'); h.textContent = cat; list.append(h); }
+  const d = document.createElement('div'); d.className = 'item'; d.dataset.id = m.id;
+  d.innerHTML = `<input type="checkbox" title="Оставить"><span class="n">${m.name}</span><span class="s">${m.by}</span>`;
+  const cb = d.querySelector('input'); cb.checked = kept.has(m.id);
+  cb.addEventListener('click', (e) => e.stopPropagation());
+  cb.addEventListener('change', () => { cb.checked ? kept.add(m.id) : kept.delete(m.id); save(); });
+  d.addEventListener('click', () => show(m));
+  list.append(d);
+}
+document.getElementById('copy').addEventListener('click', () => {
+  const k = MODELS.filter((m) => kept.has(m.id));
+  document.getElementById('out').textContent = k.length ? 'Оставить:\n' + k.map((m) => `• ${m.name} (${m.id})`).join('\n') + '\n\nНапиши мне этот список в чат.' : 'Пока ничего не отмечено.';
+});
+
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>

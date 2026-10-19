@@ -1,8 +1,9 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { World } from './World.js';
 import { Nav } from './Nav.js';
 import { expandMap } from './MapData.js';
+import { buildDust } from './DustMap.js';
 
 export const PALETTE = {
   bg: 0x0a0d14, attack: 0xff7a1a, defend: 0x19e0c8, edge: 0x8aa6d8,
@@ -72,6 +73,21 @@ const TEX = {
 const texCache = {};
 const T = (k) => texCache[k] || (texCache[k] = TEX[k]());
 
+// ---------- фото-текстуры Poly Haven (CC0, 1k): public/textures/<имя>_{diff,nor,rough}.jpg ----------
+const loader = new THREE.TextureLoader();
+const photoCache = {};
+function photo(name) {
+  if (photoCache[name]) return photoCache[name];
+  const load = (suffix, srgb) => {
+    const t = loader.load(`${import.meta.env.BASE_URL}textures/${name}_${suffix}.jpg`);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  return (photoCache[name] = { map: load('diff', true), normalMap: load('nor', false), roughnessMap: load('rough', false) });
+}
+const photoMat = (name, extra = {}) => new THREE.MeshStandardMaterial({ ...photo(name), vertexColors: true, metalness: 0, ...extra });
+
 function letterTexture(letter) {
   return canvasTex((g, s) => {
     const gr = g.createRadialGradient(s / 2, s / 2, 4, s / 2, s / 2, s / 2); gr.addColorStop(0, 'rgba(255,210,63,0.55)'); gr.addColorStop(1, 'rgba(255,210,63,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s);
@@ -120,20 +136,24 @@ export function loadMap(def) {
   for (const b of exp.boxes) world.add(b);
 
   const group = new THREE.Group(); group.name = 'map';
+  const dust = def.visual === 'dust';                                               // готовая процедурная карта: свои стены, земля и декор
+  if (dust) group.add(buildDust().group);
   const B = new Buckets(), edge = [];
   const mats = {
-    wall: new THREE.MeshLambertMaterial({ map: T('concrete'), vertexColors: true }),
+    wall: photoMat('concrete_wall_009'),
+    outer: photoMat('broken_brick_wall'),
+    brick: photoMat('red_brick'),
     wood: new THREE.MeshLambertMaterial({ map: T('wood'), vertexColors: true }),
-    metal: new THREE.MeshLambertMaterial({ map: T('metal'), vertexColors: true }),
-    corr: new THREE.MeshLambertMaterial({ map: T('corr'), vertexColors: true }),
+    metal: photoMat('rusty_metal_04', { metalness: 0.5 }),
+    corr: photoMat('corrugated_iron', { metalness: 0.5 }),
     trim: new THREE.MeshLambertMaterial({ vertexColors: true }),
     neon: new THREE.MeshBasicMaterial({ vertexColors: true }),
     hazard: new THREE.MeshLambertMaterial({ map: T('hazard') }),
   };
-  const keyOf = { wall: 'wall', low: 'wall', crate: 'wood', plat: 'metal', stair: 'metal', cont: 'corr', barrel: 'trim' };
+  const keyOf = { wall: 'wall', low: 'brick', crate: 'wood', plat: 'metal', stair: 'metal', cont: 'corr', barrel: 'trim' };
 
   exp.boxes.forEach((b, i) => {
-    if (b.kind === 'patch') return;
+    if (dust || b.kind === 'patch') return;
     const hv = 0.92 + hash(i) * 0.16;
     const col = new THREE.Color(b.kind === 'cont' ? CONT_COLORS[Math.floor(hash(i + 3) * CONT_COLORS.length)] : b.color).multiplyScalar(hv);
     if (b.kind === 'barrel') {                                                        // бочка: цилиндр с обручами
@@ -143,7 +163,7 @@ export function loadMap(def) {
       B.cylinder('trim', cx, 0.95, cz, 0.28, 0.03, 0x3a414c);
       return;
     }
-    B.box(keyOf[b.kind] || 'wall', b.x0, b.y0, b.z0, b.w, b.h, b.d, col, b.kind === 'cont' ? 2.6 : 2);
+    B.box(b.outer && b.kind === 'wall' ? 'outer' : keyOf[b.kind] || 'wall', b.x0, b.y0, b.z0, b.w, b.h, b.d, col, b.kind === 'cont' ? 2.6 : 2);
     if (b.outer) return;
     const x1 = b.x1, y1 = b.y1, z1 = b.z1;
     // контурные линии
@@ -191,11 +211,14 @@ export function loadMap(def) {
   group.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: PALETTE.edge, transparent: true, opacity: 0.35 })));
 
   // ---------- пол ----------
-  const ft = T('floor'); ft.repeat.set((W + 8) / 4, (D + 8) / 4);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 8, D + 8), new THREE.MeshLambertMaterial({ map: ft, color: exp.floor.tint || 0x8d97aa }));
-  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; group.add(floor);
+  if (!dust) {
+    const fp = photo('cracked_concrete_02');
+    for (const t of [fp.map, fp.normalMap, fp.roughnessMap]) t.repeat.set((W + 8) / 4, (D + 8) / 4);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 8, D + 8), new THREE.MeshStandardMaterial({ ...fp, metalness: 0 }));
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; group.add(floor);
+  }
   for (const b of exp.boxes) {                                                     // пятна покрытий
-    if (b.kind !== 'patch') continue;
+    if (dust || b.kind !== 'patch') continue;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(b.w, b.d), new THREE.MeshLambertMaterial({ color: b.surf === 'sand' ? 0x6d6247 : 0x3a4658 }));
     m.rotation.x = -Math.PI / 2; m.position.set(b.x0 + b.w / 2, b.h + 0.012, b.z0 + b.d / 2); m.receiveShadow = true; group.add(m);
   }
@@ -213,10 +236,13 @@ export function loadMap(def) {
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
     group.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color })));
   };
-  spawnPlane(exp.attackSpawns, PALETTE.attack);
-  spawnPlane(exp.defendSpawns, PALETTE.defend);
+  if (!dust) { spawnPlane(exp.attackSpawns, PALETTE.attack); spawnPlane(exp.defendSpawns, PALETTE.defend); }
   const pylons = new Buckets();
   for (const s of Object.values(exp.sites)) {
+    if (dust) {                                                                    // только светящийся маяк-буква над точкой
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: letterTexture(s.name), transparent: true, depthWrite: false }));
+      sp.scale.set(5, 5, 1); sp.position.set(s.x, 7.5, s.z); group.add(sp); continue;
+    }
     const m = new THREE.Mesh(new THREE.PlaneGeometry(s.r * 2, s.r * 2), new THREE.MeshBasicMaterial({ map: siteTexture(s.name), transparent: true, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.position.set(s.x, 0.03, s.z); group.add(m);
     // маяк-буква над точкой и четыре пилона по периметру
@@ -243,36 +269,6 @@ export function loadMap(def) {
   if (glow.length) group.add(new THREE.Mesh(mergeGeometries(glow), new THREE.MeshBasicMaterial({ map: T('glow'), color: 0xffe6b0, transparent: true, opacity: 0.38, blending: THREE.AdditiveBlending, depthWrite: false })));
   if (cones.length) group.add(new THREE.Mesh(mergeGeometries(cones), new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0.045, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
 
-  group.add(buildSky());
   const nav = new Nav(exp.nodes, world);
   return { exp, world, nav, group };
-}
-
-// ---------- небо: градиентный купол, звёзды, луна, силуэт города вдалеке ----------
-function buildSky() {
-  const g = new THREE.Group(); g.name = 'sky';
-  const dome = new THREE.SphereGeometry(330, 24, 14);
-  const pos = dome.attributes.position, col = new Float32Array(pos.count * 3), top = new THREE.Color(0x03060f), mid = new THREE.Color(0x0c1830), hor = new THREE.Color(0x24495f);
-  for (let i = 0; i < pos.count; i++) { const t = Math.max(0, pos.getY(i) / 330), c = t < 0.25 ? hor.clone().lerp(mid, t / 0.25) : mid.clone().lerp(top, Math.min(1, (t - 0.25) / 0.6)); col.set([c.r, c.g, c.b], i * 3); }
-  dome.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const sky = new THREE.Mesh(dome, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
-  sky.renderOrder = -2; g.add(sky);
-  const sp = [];
-  for (let i = 0; i < 380; i++) { const a = Math.random() * 6.283, e = Math.random() * 1.25 + 0.15, r = 300; sp.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
-  g.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xcfe0ff, size: 1.6, sizeAttenuation: false, fog: false, depthWrite: false })));
-  const moon = new THREE.Mesh(new THREE.CircleGeometry(14, 28), new THREE.MeshBasicMaterial({ color: 0xe8f1ff, fog: false, depthWrite: false }));
-  moon.position.set(-120, 150, -230); moon.lookAt(0, 0, 0); g.add(moon);
-  const halo = new THREE.Mesh(new THREE.CircleGeometry(40, 28), new THREE.MeshBasicMaterial({ map: T('glow'), color: 0x9ec4ff, transparent: true, opacity: 0.4, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
-  halo.position.copy(moon.position).multiplyScalar(0.999); halo.lookAt(0, 0, 0); g.add(halo);
-  // город-силуэт: здания по кругу с горящими окнами
-  const bl = [];
-  for (let i = 0; i < 70; i++) {
-    const a = i / 70 * Math.PI * 2 + Math.random() * 0.05, r = 95 + Math.random() * 45, w = 6 + Math.random() * 10, h = 14 + Math.random() * 46, d = 6 + Math.random() * 10;
-    const b = new THREE.BoxGeometry(w, h, d); b.translate(Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r);
-    const uv = b.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * w / 8, uv.getY(k) * h / 14);
-    bl.push(b);
-  }
-  g.add(new THREE.Mesh(mergeGeometries(bl), new THREE.MeshBasicMaterial({ map: T('windows'), color: 0x8da0c0, fog: false })));
-  return g;
 }

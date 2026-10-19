@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PALETTE } from '../world/MapBuilder.js';
 import { buildGun } from '../weapons/GunModels.js';
 import { WEAPONS } from '../weapons/Weapons.js';
+import { loadSoldier, reachArm } from './Soldier.js';
 
 // Низкополигональная фигурка бойца: суставы-«шарниры» (бёдра, плечи), оружие в руках,
 // походка, приседание, падение при смерти и танцы.
@@ -56,11 +57,47 @@ export class ActorModel {
     this.visor = mesh(this.headJ, G.visor, m.glow, 0, 0.16, -0.14);
     this.shL = joint(-0.34, 1.4, 0); this.shR = joint(0.34, 1.4, 0);
     this.armL = mesh(this.shL, G.arm, m.body, 0, -0.22, 0); this.armR = mesh(this.shR, G.arm, m.body, 0, -0.22, 0);
-    this.gunHolder = new THREE.Group(); this.gunHolder.position.set(0.16, 1.1, -0.12); this.inner.add(this.gunHolder);
+    this.gunHolder = new THREE.Group(); this.gunHolder.position.set(0.14, 1.2, -0.12); this.inner.add(this.gunHolder);
     this.gunId = null; this.gunObj = null;
     this.orig = this.parts.map((p) => p.material);
     this.phase = 0; this.crouch = 0; this.fall = 0; this.revealed = false; this.dt = 0;
     this.danceT = 0;
+    // фото-солдат подменяет кубики, когда загрузится; кубики остаются для танцев и как запасной вид
+    this.soldier = null; this.cur = null;
+    loadSoldier().then((s) => {
+      this.soldier = s; this.inner.add(s.wrap);
+      s.orig = s.meshes.map((m) => m.material); s.base = s.meshes.map((m) => m.material.color.clone());
+      this.tint(side); this.showSoldier(true);
+      if (this.revealed) { this.revealed = false; this.setRevealed(true); }
+    }).catch((e) => console.warn('солдат не загрузился, остаются кубики:', e));
+  }
+  tint(side) {
+    const c = new THREE.Color(side === 'atk' ? PALETTE.attack : PALETTE.defend);
+    // цвет команды: лёгкий оттенок + слабое свечение, чтобы не терялись текстуры формы
+    this.soldier?.meshes.forEach((m, i) => { m.material.color.copy(this.soldier.base[i]).lerp(c, 0.28); m.material.emissive?.copy(c).multiplyScalar(0.07); });
+  }
+  showSoldier(on) {
+    if (!this.soldier) return;
+    this.soldier.wrap.visible = on;
+    this.parts.forEach((p) => { p.visible = !on; });
+  }
+  // руки солдата тянутся к хвату оружия: правая — к рукоятке, левая — к цевью (нож — одной рукой)
+  holdGun() {
+    if (!this.gunObj || !this.hands) return;
+    this.root.updateMatrixWorld(true);
+    const q = this.root.getWorldQuaternion(new THREE.Quaternion());
+    const out = (x) => new THREE.Vector3(x, -0.9, 0.2).applyQuaternion(q);   // локоть в сторону и вниз
+    const { r, l } = this.hands, arms = this.soldier.arms;
+    reachArm(arms.r, this.gunObj.localToWorld(new THREE.Vector3(...r)), out(0.8));
+    if (WEAPONS[this.gunId].type !== 'melee') reachArm(arms.l, this.gunObj.localToWorld(new THREE.Vector3(...l)), out(-0.8));
+  }
+  // проигрывает нужную анимацию с плавным переходом
+  play(name) {
+    const s = this.soldier, next = s.act[name];
+    if (!next || this.cur === next) return;
+    next.reset().play();
+    if (this.cur) this.cur.crossFadeTo(next, 0.2, false);
+    this.cur = next;
   }
   setSide(side) {
     if (side === this.side) return;
@@ -68,12 +105,14 @@ export class ActorModel {
     this.torso.material = this.armL.material = this.armR.material = m.body;
     this.pack.material = this.visor.material = m.glow;
     this.orig = this.parts.map((p) => p.material);
+    this.tint(side);
     if (this.revealed) { this.revealed = false; this.setRevealed(true); }
   }
   setRevealed(r) {
     if (r === this.revealed) return;
     this.revealed = r;
     this.parts.forEach((p, i) => { p.material = r ? revealMat : this.orig[i]; p.renderOrder = r ? 999 : 0; });
+    this.soldier?.meshes.forEach((p, i) => { p.material = r ? revealMat : this.soldier.orig[i]; p.renderOrder = r ? 999 : 0; });
     if (this.gunObj) this.gunObj.traverse((o) => { if (o.isMesh) { o.renderOrder = r ? 999 : 0; } });
   }
   setGun(id) {
@@ -82,8 +121,9 @@ export class ActorModel {
     if (this.gunObj) this.gunHolder.remove(this.gunObj);
     if (!id) { this.gunObj = null; return; }
     const def = WEAPONS[id];
-    const g = (gunCache[id] ||= buildGun(def).group);
-    const c = g.clone(true);
+    const o = (gunCache[id] ||= buildGun(def));
+    this.hands = o.hands;                                  // точки хвата (правая и левая рука) в координатах оружия
+    const c = o.group.clone(true);
     c.scale.setScalar(def.type === 'melee' ? 0.9 : 0.85);
     this.gunObj = c; this.gunHolder.add(c);
   }
@@ -100,8 +140,17 @@ export class ActorModel {
     if (a.alive) {
       this.fall = 0;
       const g = a.gun; this.setGun(g ? g.id : null);
-      if (a.dance) { this.dance(a, dt); return; }
+      if (a.dance) { this.showSoldier(false); this.dance(a, dt); return; }
+      this.showSoldier(true);
       this.gunHolder.visible = true;
+      if (this.soldier) {                                  // фото-солдат: ноги и руки ведёт анимация
+        const v = a.speedNow;
+        this.play(v < 0.4 ? 'idle' : v < 3.6 ? 'walk' : 'run');
+        this.soldier.mixer.update(dt);
+        this.gunHolder.rotation.set(a.pitch * 0.5, 0, 0);
+        this.holdGun();
+        return;
+      }
       this.headJ.rotation.set(0, 0, 0);
       this.phase += a.speedNow * dt * 2.2;
       const sw = Math.min(1, a.speedNow / 3) * 0.75;
